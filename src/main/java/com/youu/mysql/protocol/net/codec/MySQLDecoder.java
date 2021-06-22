@@ -1,0 +1,76 @@
+package com.youu.mysql.protocol.net.codec;
+
+import java.util.List;
+
+import com.youu.mysql.protocol.net.pkg.MySQLPacket;
+import com.youu.mysql.protocol.net.pkg.req.ComPacket;
+import com.youu.mysql.protocol.net.pkg.req.ComQuery;
+import com.youu.mysql.protocol.net.pkg.req.ComQuit;
+import com.youu.mysql.protocol.net.pkg.req.LoginRequest;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.ByteToMessageDecoder;
+import lombok.extern.slf4j.Slf4j;
+
+import static com.youu.mysql.protocol.net.pkg.ComId.COM_QUERY;
+import static com.youu.mysql.protocol.net.pkg.ComId.COM_QUIT;
+
+/**
+ * @Author Timmy
+ * @Description
+ * @Date 2021/6/16
+ */
+@Slf4j
+public class MySQLDecoder extends ByteToMessageDecoder {
+    //client第一次发送的是LoginRequest,后续是Command Phase
+    private boolean firstRequest = true;
+
+    @Override
+    protected void decode(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf, List<Object> list) {
+        if (byteBuf.isReadable(4)) {
+            int packetSize = byteBuf.getUnsignedMediumLE(0);
+            if (byteBuf.isReadable(packetSize + 3/*Packet Length*/ + 1/*Packet Num*/)) {
+
+            } else {
+                // data is not full
+                log.warn("wait data {}", byteBuf);
+                return;
+            }
+        } else {
+            log.warn("no data {}", byteBuf);
+            return;
+        }
+        list.add(decode(byteBuf));
+    }
+
+    public MySQLPacket decode(ByteBuf buf) {
+        if (firstRequest) {
+            firstRequest = false;
+            LoginRequest request = new LoginRequest();
+            request.read(buf);
+            return request;
+        }
+
+        byte commandId = buf.getByte(4);
+        MySQLPacket result;
+        switch (commandId) {
+            case COM_QUIT:
+                ComQuit quit = new ComQuit();
+                quit.read(buf);
+                result = quit;
+                break;
+            case COM_QUERY:
+                ComQuery query = new ComQuery();
+                query.read(buf);
+                result = query;
+                break;
+
+            default:
+                ComPacket packet = new ComPacket();
+                packet.read(buf);
+                result = packet;
+                break;
+        }
+        return result;
+    }
+}
