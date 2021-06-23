@@ -68,4 +68,32 @@ public class ResultSetPacketTest extends TestCase {
         Assert.assertEquals(hexDump, ByteBufUtil.hexDump(buf1));
     }
 
+    @Test
+    public void testRead3() {
+        String hexDump
+            =
+            "01000001011b0000020364656600000005e4b83f9bbd000c1c0006000000fd01001f000005000003fe000002000700000406e4b8ade59bbd05000005fe00000200";
+        ByteBuf buf = Unpooled.wrappedBuffer(
+            ByteBufUtil.decodeHexDump(hexDump));
+        ResultSetPacket read = (ResultSetPacket)packet.read(buf);
+        System.out.println(read);
+        ByteBuf buf1 = Unpooled.buffer(128);
+        read.write(buf1);
+        Assert.assertEquals(hexDump, ByteBufUtil.hexDump(buf1));
+    }
+
+    @Test
+    public void testRead4() {
+        String hexDump
+            =
+            "01000001011c0000020364656600000006e4b8ade59bbd000c210006000000fd01001f000005000003fe000002000700000406e4b8ade59bbd05000005fe00000200";
+        ByteBuf buf = Unpooled.wrappedBuffer(
+            ByteBufUtil.decodeHexDump(hexDump));
+        ResultSetPacket read = (ResultSetPacket)packet.read(buf);
+        System.out.println(read);
+        ByteBuf buf1 = Unpooled.buffer(128);
+        read.write(buf1);
+        Assert.assertEquals(hexDump, ByteBufUtil.hexDump(buf1));
+    }
+
 }

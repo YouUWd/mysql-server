@@ -2,7 +2,6 @@ package com.youu.common;
 
 import java.util.Arrays;
 
-import com.seaboat.mysql.protocol.util.HexUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import lombok.extern.slf4j.Slf4j;
@@ -15,20 +14,6 @@ import org.junit.Test;
  */
 @Slf4j
 public class CommonTest {
-    @Test
-    public void testByteValue() {
-        int i = 0x41;
-        System.out.println((byte)i);
-        byte f = 4;
-        byte s = 1;
-        System.out.println((f << 4) + s);
-        System.out.println(Integer.parseInt("4a", 16));
-        System.out.println(Byte.parseByte("4a", 16));
-        byte[] bytes = HexUtil.hexStr2Bytes(
-            "4a0000000a382e302e3232000d0000003d637f08466f182e00ffffff0200ffc71500000000000000000000575d7a36223e376377532d6d006d7973716c5f6e61746976655f70617373776f726400");
-        System.out.println(Arrays.toString(bytes));
-        System.out.println((byte)217);
-    }
 
     @Test
     public void testByteBufferMarkIndex() {

@@ -4,10 +4,9 @@ import com.youu.mysql.protocol.net.constant.MySQLColumnType;
 import com.youu.mysql.protocol.net.pkg.req.ComQuery;
 import com.youu.mysql.protocol.net.pkg.req.ComQuit;
 import com.youu.mysql.protocol.net.pkg.req.LoginRequest;
+import com.youu.mysql.protocol.net.pkg.res.HandshakePacket;
 import com.youu.mysql.protocol.net.pkg.res.OkPacket;
 import com.youu.mysql.protocol.net.pkg.res.ResultSetPacket;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -23,47 +22,28 @@ import lombok.extern.slf4j.Slf4j;
 public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+    public void channelActive(ChannelHandlerContext ctx) {
         log.info("channelActive");
         //https://dev.mysql.com/doc/internals/en/connection-phase-packets.html
-        ByteBuf buf = Unpooled.buffer(1024);
-        buf.writeIntLE(0x4a);
-        buf.writeByte(0x0a);
-        buf.writeBytes("8.0.22".getBytes());
-        buf.writeByte(0);
-        buf.writeIntLE(18);
-
-        byte[] s1 = {0x3b, 0x26, 0x28, 0x6e, 0x25, 0x5e, 0x2f, 0x60};
-        buf.writeBytes(s1);
-        buf.writeByte(0);
-        //capability flags
-        buf.writeByte(0xff);
-        buf.writeByte(0xff);
-        //character set
-        buf.writeByte(0xff);
-        //status flags
-        buf.writeByte(0x02);
-        buf.writeByte(0);
-        //capability flags
-        buf.writeByte(0xff);
-        buf.writeByte(0xc7);
-        //length of auth-plugin-data
-        buf.writeByte(0x15);
-        for (int i = 0; i < 10; i++) {
-            buf.writeByte(0);
-        }
-        byte[] s2 = {0x74, 0x61, 0x09, 0x03, 0x09, 0x01, 0x1c, 0x1c, 0x4e, 0x65, 0x13, 0x70, 0x00};
-        buf.writeBytes(s2);
-        buf.writeBytes("mysql_native_password".getBytes());
-        buf.writeByte(0);
-
-        ctx.writeAndFlush(buf);
+        short charset = 255;
+        HandshakePacket handshakePacket = HandshakePacket.builder()
+            .serverVersion("8.0.22-HTAP")
+            .connectionId(1)
+            .authPluginDataPart1(new byte[] {1, 2, 3, 4, 5, 6, 7, 8})
+            .capabilityFlags1(0xffff)
+            .characterSet(charset)
+            .statusFlags(0x0002)
+            .capabilityFlags2(0xffc7)
+            .authPluginDataLength((short)21)
+            .authPluginDataPart2(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13})
+            .authPluginName("mysql_native_password")
+            .build();
+        ctx.writeAndFlush(handshakePacket);
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         log.info("channelRead {}", msg);
-        ByteBuf buf = Unpooled.buffer(1024);
         if (msg instanceof LoginRequest) {
             //Response OK for login
             OkPacket ok = OkPacket.builder().build();

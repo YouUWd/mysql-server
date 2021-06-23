@@ -54,8 +54,16 @@ public class MySQLBufUtil {
     }
 
     public static String readLenEncString(ByteBuf buf) {
+        return readLenEncString(buf, Charset.defaultCharset());
+    }
+
+    public static String readLenEncString(ByteBuf buf, String charsetName) {
+        return readLenEncString(buf, Charset.forName(charsetName));
+    }
+
+    public static String readLenEncString(ByteBuf buf, Charset charset) {
         long strLen = readLengthEncodedInteger(buf);
-        String str = buf.toString(buf.readerIndex(), (int)strLen, Charset.defaultCharset());
+        String str = buf.toString(buf.readerIndex(), (int)strLen, charset);
         buf.skipBytes((int)strLen);
         return str;
     }
@@ -92,7 +100,15 @@ public class MySQLBufUtil {
     }
 
     public static void writeLenEncString(ByteBuf buf, String str) {
-        byte[] data = str.getBytes(Charset.defaultCharset());
+        writeLenEncString(buf, str, Charset.defaultCharset());
+    }
+
+    public static void writeLenEncString(ByteBuf buf, String str, String charset) {
+        writeLenEncString(buf, str, Charset.forName(charset));
+    }
+
+    public static void writeLenEncString(ByteBuf buf, String str, Charset charset) {
+        byte[] data = str.getBytes(charset);
         long strLen = data.length;
         writeLengthEncodedInt(buf, strLen);
         buf.writeBytes(data);
