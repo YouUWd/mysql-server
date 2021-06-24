@@ -1,12 +1,8 @@
 package com.youu.mysql.protocol.net.pkg.req;
 
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
-import com.youu.mysql.protocol.net.pkg.CapabilityFlags;
-import com.youu.mysql.protocol.net.pkg.MySQLCharacterSet;
 import com.youu.mysql.protocol.net.pkg.MySQLPacket;
 import com.youu.mysql.protocol.net.util.MySQLBufUtil;
 import io.netty.buffer.ByteBuf;
@@ -25,9 +21,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class LoginRequest extends MySQLPacket {
-    private Set<CapabilityFlags> capabilityFlags = EnumSet.noneOf(CapabilityFlags.class);
-    private int maxPacketSize;
-    private MySQLCharacterSet characterSet;
+    private long capabilityFlags;
+    private long maxPacketSize;
+    private short characterSet;
     private String username;
     private String database;
     private String authPluginName;
@@ -36,11 +32,11 @@ public class LoginRequest extends MySQLPacket {
     @Override
     protected void readPayload(ByteBuf buffer) {
         //TODO 密码校验等
-        long capabilityFlags = buffer.readUnsignedIntLE();
-        long maxPacketSize = buffer.readUnsignedIntLE();
-        byte charset = buffer.readByte();
+        this.capabilityFlags = buffer.readUnsignedIntLE();
+        this.maxPacketSize = buffer.readUnsignedIntLE();
+        this.characterSet = buffer.readUnsignedByte();
         buffer.skipBytes(23);//reserved (all [0])
-        String username = MySQLBufUtil.readNullTerminatedString(buffer);
+        this.username = MySQLBufUtil.readNullTerminatedString(buffer);
         buffer.readerIndex(getPayloadLength() + 4);
     }
 

@@ -3,6 +3,7 @@ package com.youu.mysql.protocol.net;
 import com.youu.mysql.protocol.net.codec.MySQLDecoder;
 import com.youu.mysql.protocol.net.codec.MySQLEncoder;
 import com.youu.mysql.protocol.net.handler.MySQLServerHandler;
+import com.youu.mysql.protocol.net.storage.H2StorageProvider;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -40,7 +41,7 @@ public class MySQLServer {
         // Configure the server.
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup();
-        final MySQLServerHandler serverHandler = new MySQLServerHandler();
+        final MySQLServerHandler serverHandler = new MySQLServerHandler(new H2StorageProvider());
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)

@@ -57,6 +57,19 @@
             <version>8.0.25</version>
         </dependency>
 
+        <!-- DATABASES -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>1.4.200</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.hsqldb</groupId>
+            <artifactId>hsqldb</artifactId>
+            <version>2.4.1</version>
+        </dependency>
+
 
         <dependency>
             <groupId>org.projectlombok</groupId>

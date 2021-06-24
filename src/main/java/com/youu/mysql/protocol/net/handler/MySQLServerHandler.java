@@ -1,15 +1,22 @@
 package com.youu.mysql.protocol.net.handler;
 
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+
 import com.youu.mysql.protocol.net.constant.MySQLColumnType;
+import com.youu.mysql.protocol.net.pkg.req.ComInitDB;
 import com.youu.mysql.protocol.net.pkg.req.ComQuery;
 import com.youu.mysql.protocol.net.pkg.req.ComQuit;
 import com.youu.mysql.protocol.net.pkg.req.LoginRequest;
 import com.youu.mysql.protocol.net.pkg.res.HandshakePacket;
 import com.youu.mysql.protocol.net.pkg.res.OkPacket;
 import com.youu.mysql.protocol.net.pkg.res.ResultSetPacket;
+import com.youu.mysql.protocol.net.storage.StorageProvider;
+import com.youu.mysql.protocol.net.util.ConnectionId;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -20,15 +27,20 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Sharable
 public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
+    private StorageProvider storageProvider;
+
+    public MySQLServerHandler(StorageProvider storageProvider) {
+        this.storageProvider = storageProvider;
+    }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
-        log.info("channelActive");
+        log.info("channelActive {}", ConnectionId.get());
         //https://dev.mysql.com/doc/internals/en/connection-phase-packets.html
         short charset = 255;
         HandshakePacket handshakePacket = HandshakePacket.builder()
             .serverVersion("8.0.22-HTAP")
-            .connectionId(1)
+            .connectionId(ConnectionId.get())
             .authPluginDataPart1(new byte[] {1, 2, 3, 4, 5, 6, 7, 8})
             .capabilityFlags1(0xffff)
             .characterSet(charset)
@@ -41,17 +53,25 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
         ctx.writeAndFlush(handshakePacket);
     }
 
+    @SneakyThrows
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        log.info("channelRead {}", msg);
+        log.info("channelRead {} {}", msg, ConnectionId.get());
         if (msg instanceof LoginRequest) {
             //Response OK for login
+            storageProvider.init("");
             OkPacket ok = OkPacket.builder().build();
             ok.setSequenceId((byte)(((LoginRequest)msg).getSequenceId() + 1));
             ctx.writeAndFlush(ok);
+        } else if (msg instanceof ComInitDB) {
+            storageProvider.init(((ComInitDB)msg).getSchema());
+            OkPacket ok = OkPacket.builder().build();
+            ok.setSequenceId((byte)(((ComInitDB)msg).getSequenceId() + 1));
+            ctx.writeAndFlush(ok);
         } else if (msg instanceof ComQuery) {
             //Response for query
-            if (((ComQuery)msg).getQuery().contains("@@version_comment")) {
+            String sql = ((ComQuery)msg).getQuery();
+            if (sql.contains("@@version_comment")) {
                 ResultSetPacket versionPacket = new ResultSetPacket();
                 versionPacket.addColumnDefinition("", "", "", "@@version_comment", "", 33, 57,
                     MySQLColumnType.MYSQL_TYPE_VAR_STRING);
@@ -60,16 +80,34 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
                 versionPacket.addEofRow();
                 ctx.writeAndFlush(versionPacket);
             } else {
-                ResultSetPacket resultSetPacket = new ResultSetPacket();
-                resultSetPacket.setSequenceId(((ComQuery)msg).getSequenceId());
-                resultSetPacket.addColumnDefinition("d1", "t1", "t1", "id", "id", 63, 11,
-                    MySQLColumnType.MYSQL_TYPE_LONG);
-                resultSetPacket.addColumnDefinition("d1", "t1", "t1", "name", "name", 33, 48,
-                    MySQLColumnType.MYSQL_TYPE_VAR_STRING);
-                resultSetPacket.addEofDef();
-                resultSetPacket.addResultSetRow("1", "a");
-                resultSetPacket.addEofRow();
-                ctx.writeAndFlush(resultSetPacket);
+                if (sql.contains("select") || sql.contains("SELECT") || sql.contains("show") || sql.contains("SHOW")) {
+                    ResultSetPacket resultSetPacket = new ResultSetPacket();
+                    resultSetPacket.setSequenceId(((ComQuery)msg).getSequenceId());
+                    ResultSet resultSet = storageProvider.executeQuery(sql);
+                    ResultSetMetaData metaData = resultSet.getMetaData();
+                    int columnCount = metaData.getColumnCount();
+                    for (int i = 1; i <= columnCount; i++) {
+                        resultSetPacket.addColumnDefinition(metaData.getSchemaName(i), metaData.getTableName(i),
+                            metaData.getTableName(i), metaData.getColumnLabel(i), metaData.getColumnName(i),
+                            33, metaData.getColumnDisplaySize(i), MySQLColumnType.MYSQL_TYPE_VAR_STRING);
+                    }
+                    resultSetPacket.addEofDef();
+                    while (resultSet.next()) {
+                        String[] data = new String[columnCount];
+                        for (int i = 0; i < columnCount; i++) {
+                            data[i] = resultSet.getString(i + 1);
+                        }
+                        resultSetPacket.addResultSetRow(data);
+                    }
+                    resultSetPacket.addEofRow();
+                    ctx.writeAndFlush(resultSetPacket);
+                } else {
+                    storageProvider.execute(sql);
+                    OkPacket ok = OkPacket.builder().build();
+                    ok.setSequenceId((byte)(((ComQuery)msg).getSequenceId() + 1));
+                    ctx.writeAndFlush(ok);
+                }
+
             }
         } else if (msg instanceof ComQuit) {
             ctx.close();

@@ -3,6 +3,7 @@ package com.youu.mysql.protocol.net.codec;
 import java.util.List;
 
 import com.youu.mysql.protocol.net.pkg.MySQLPacket;
+import com.youu.mysql.protocol.net.pkg.req.ComInitDB;
 import com.youu.mysql.protocol.net.pkg.req.ComPacket;
 import com.youu.mysql.protocol.net.pkg.req.ComQuery;
 import com.youu.mysql.protocol.net.pkg.req.ComQuit;
@@ -11,9 +12,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import lombok.extern.slf4j.Slf4j;
-
-import static com.youu.mysql.protocol.net.pkg.ComId.COM_QUERY;
-import static com.youu.mysql.protocol.net.pkg.ComId.COM_QUIT;
 
 /**
  * @Author Timmy
@@ -54,17 +52,21 @@ public class MySQLDecoder extends ByteToMessageDecoder {
         byte commandId = buf.getByte(4);
         MySQLPacket result;
         switch (commandId) {
-            case COM_QUIT:
+            case ComQuit.ID:
                 ComQuit quit = new ComQuit();
                 quit.read(buf);
                 result = quit;
                 break;
-            case COM_QUERY:
+            case ComInitDB.ID:
+                ComInitDB initDB = new ComInitDB();
+                initDB.read(buf);
+                result = initDB;
+                break;
+            case ComQuery.ID:
                 ComQuery query = new ComQuery();
                 query.read(buf);
                 result = query;
                 break;
-
             default:
                 ComPacket packet = new ComPacket();
                 packet.read(buf);

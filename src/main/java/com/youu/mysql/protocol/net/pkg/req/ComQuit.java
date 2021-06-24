@@ -11,7 +11,7 @@ import lombok.Data;
  */
 @Data
 public class ComQuit extends MySQLPacket {
-    private static final byte ID = 0x01;
+    public static final byte ID = 0x01;
 
     @Override
     protected void readPayload(ByteBuf buffer) {
