@@ -57,6 +57,13 @@
             <version>8.0.25</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.20</version>
+            <scope>provided</scope>
+        </dependency>
+
         <!-- DATABASES -->
         <dependency>
             <groupId>com.h2database</groupId>
@@ -70,13 +77,13 @@
             <version>2.4.1</version>
         </dependency>
 
-
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.18.20</version>
-            <scope>provided</scope>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>mysql</artifactId>
+            <version>1.15.3</version>
+            <scope>test</scope>
         </dependency>
+
 
         <dependency>
             <groupId>junit</groupId>

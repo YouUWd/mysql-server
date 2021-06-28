@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 
 /**
  * @Author Timmy
- * @Description
+ * @Description HandshakeV10 Send by server after connect create
  * @Date 2021/6/23
  * @see
  * <a href="https://dev.mysql.com/doc/internals/en/connection-phase-packets.html#packet-Protocol::HandshakeV10">HandshakeV10</a>

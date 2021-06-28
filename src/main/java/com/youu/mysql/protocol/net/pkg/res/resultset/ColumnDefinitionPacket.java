@@ -40,11 +40,11 @@ public class ColumnDefinitionPacket extends MySQLPacket {
     protected void readPayload(ByteBuf buffer) {
         MySQLBufUtil.readLenEncString(buffer);
         int index = buffer.readerIndex();
-        buffer.skipBytes((int)MySQLBufUtil.readLengthEncodedInteger(buffer));
-        buffer.skipBytes((int)MySQLBufUtil.readLengthEncodedInteger(buffer));
-        buffer.skipBytes((int)MySQLBufUtil.readLengthEncodedInteger(buffer));
-        buffer.skipBytes((int)MySQLBufUtil.readLengthEncodedInteger(buffer));
-        buffer.skipBytes((int)MySQLBufUtil.readLengthEncodedInteger(buffer));
+        buffer.skipBytes((int)MySQLBufUtil.readLenEncInteger(buffer));
+        buffer.skipBytes((int)MySQLBufUtil.readLenEncInteger(buffer));
+        buffer.skipBytes((int)MySQLBufUtil.readLenEncInteger(buffer));
+        buffer.skipBytes((int)MySQLBufUtil.readLenEncInteger(buffer));
+        buffer.skipBytes((int)MySQLBufUtil.readLenEncInteger(buffer));
         buffer.skipBytes(1);
         this.character = buffer.readShortLE();
         String charset = CharsetMapping.getJavaEncodingForCollationIndex(character);
@@ -62,7 +62,7 @@ public class ColumnDefinitionPacket extends MySQLPacket {
         this.decimals = buffer.readByte();
         buffer.readBytes(FILLER);
         if (packet instanceof ComFieldList) {
-            this.lengthOfDefaultValue = MySQLBufUtil.readLengthEncodedInteger(buffer);
+            this.lengthOfDefaultValue = MySQLBufUtil.readLenEncInteger(buffer);
         }
     }
 

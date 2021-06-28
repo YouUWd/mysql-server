@@ -3,8 +3,10 @@ package com.youu.mysql.protocol.net.codec;
 import java.util.List;
 
 import com.youu.mysql.protocol.net.pkg.MySQLPacket;
+import com.youu.mysql.protocol.net.pkg.req.ComFieldList;
 import com.youu.mysql.protocol.net.pkg.req.ComInitDB;
 import com.youu.mysql.protocol.net.pkg.req.ComPacket;
+import com.youu.mysql.protocol.net.pkg.req.ComProcessKill;
 import com.youu.mysql.protocol.net.pkg.req.ComQuery;
 import com.youu.mysql.protocol.net.pkg.req.ComQuit;
 import com.youu.mysql.protocol.net.pkg.req.LoginRequest;
@@ -66,6 +68,16 @@ public class MySQLDecoder extends ByteToMessageDecoder {
                 ComQuery query = new ComQuery();
                 query.read(buf);
                 result = query;
+                break;
+            case ComFieldList.ID:
+                ComFieldList fieldList = new ComFieldList();
+                fieldList.read(buf);
+                result = fieldList;
+                break;
+            case ComProcessKill.ID:
+                ComProcessKill kill = new ComProcessKill();
+                kill.read(buf);
+                result = kill;
                 break;
             default:
                 ComPacket packet = new ComPacket();

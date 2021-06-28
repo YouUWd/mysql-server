@@ -25,12 +25,12 @@ public class ColumnCountPacket extends MySQLPacket {
 
     @Override
     protected void readPayload(ByteBuf buffer) {
-        this.columnCount = MySQLBufUtil.readLengthEncodedInteger(buffer);
+        this.columnCount = MySQLBufUtil.readLenEncInteger(buffer);
     }
 
     @Override
     protected void writePayload(ByteBuf buffer) {
-        MySQLBufUtil.writeLengthEncodedInt(buffer, columnCount);
+        MySQLBufUtil.writeLenEncInt(buffer, columnCount);
     }
 
     public void addColumn() {

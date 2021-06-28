@@ -2,15 +2,21 @@ package com.youu.mysql.protocol.net.handler;
 
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 
 import com.youu.mysql.protocol.net.constant.MySQLColumnType;
+import com.youu.mysql.protocol.net.pkg.req.ComFieldList;
 import com.youu.mysql.protocol.net.pkg.req.ComInitDB;
+import com.youu.mysql.protocol.net.pkg.req.ComProcessKill;
 import com.youu.mysql.protocol.net.pkg.req.ComQuery;
 import com.youu.mysql.protocol.net.pkg.req.ComQuit;
 import com.youu.mysql.protocol.net.pkg.req.LoginRequest;
+import com.youu.mysql.protocol.net.pkg.res.EofPacket;
+import com.youu.mysql.protocol.net.pkg.res.ErrorPacket;
 import com.youu.mysql.protocol.net.pkg.res.HandshakePacket;
 import com.youu.mysql.protocol.net.pkg.res.OkPacket;
 import com.youu.mysql.protocol.net.pkg.res.ResultSetPacket;
+import com.youu.mysql.protocol.net.pkg.res.resultset.ColumnDefinitionPacket;
 import com.youu.mysql.protocol.net.storage.StorageProvider;
 import com.youu.mysql.protocol.net.util.ConnectionId;
 import io.netty.channel.ChannelHandler.Sharable;
@@ -59,7 +65,7 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
         log.info("channelRead {} {}", msg, ConnectionId.get());
         if (msg instanceof LoginRequest) {
             //Response OK for login
-            storageProvider.init("");
+            storageProvider.init(((LoginRequest)msg).getDatabase());
             OkPacket ok = OkPacket.builder().build();
             ok.setSequenceId((byte)(((LoginRequest)msg).getSequenceId() + 1));
             ctx.writeAndFlush(ok);
@@ -80,13 +86,16 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
                 versionPacket.addEofRow();
                 ctx.writeAndFlush(versionPacket);
             } else {
-                if (sql.contains("select") || sql.contains("SELECT") || sql.contains("show") || sql.contains("SHOW")) {
+                if (sql.contains("select") || sql.contains("SELECT") || sql.contains("show") || sql.contains
+                    ("SHOW")) {
                     ResultSetPacket resultSetPacket = new ResultSetPacket();
                     resultSetPacket.setSequenceId(((ComQuery)msg).getSequenceId());
                     ResultSet resultSet = storageProvider.executeQuery(sql);
                     ResultSetMetaData metaData = resultSet.getMetaData();
                     int columnCount = metaData.getColumnCount();
                     for (int i = 1; i <= columnCount; i++) {
+                        //ColumnDefinitionPacket  charset 应当是client的连接的charset，
+                        // 也即show variables like 'character_set_results'; 可从LoginRequest获取
                         resultSetPacket.addColumnDefinition(metaData.getSchemaName(i), metaData.getTableName(i),
                             metaData.getTableName(i), metaData.getColumnLabel(i), metaData.getColumnName(i),
                             33, metaData.getColumnDisplaySize(i), MySQLColumnType.MYSQL_TYPE_VAR_STRING);
@@ -110,15 +119,58 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
 
             }
         } else if (msg instanceof ComQuit) {
-            ctx.close();
+            channelInactive(ctx);
+        } else if (msg instanceof ComProcessKill) {
+            channelInactive(ctx);
+        } else if (msg instanceof ComFieldList) {
+            ColumnDefinitionPacket definitionPacket = ColumnDefinitionPacket.builder()
+                .schema("schema")
+                .table("tableName")
+                .orgTable("orgTableName")
+                .name("columnName")
+                .orgName("orgColumnName")
+                .character(33)
+                .columnLength(1024)
+                .type(MySQLColumnType.MYSQL_TYPE_VAR_STRING.getValue())
+                .flags(new byte[] {0, 0})
+                .decimals(0x1f)
+                .build();
+            definitionPacket.setSequenceId((byte)1);
+            ctx.write(definitionPacket);
+
+            EofPacket eofDef = new EofPacket();
+            eofDef.setSequenceId((byte)2);
+
+            ctx.writeAndFlush(eofDef);
         }
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         // Close the connection when an exception is raised.
-        cause.printStackTrace();
-        ctx.close();
+        log.error("exceptionCaught", cause);
+        byte seq = 1;
+        ErrorPacket errorPacket = new ErrorPacket();
+        errorPacket.setSequenceId(seq);
+        errorPacket.setSqlStateMarker("#");
+        errorPacket.setErrorMessage(cause.getMessage());
+        if (cause instanceof SQLException) {
+            errorPacket.setErrorCode(((SQLException)cause).getErrorCode());
+            errorPacket.setSqlState(((SQLException)cause).getSQLState());
+        } else {
+            errorPacket.setErrorCode(1000);
+            errorPacket.setSqlState("10S00");
+        }
+        ctx.writeAndFlush(errorPacket);
     }
 
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) {
+        try {
+            storageProvider.release();
+        } catch (SQLException exception) {
+            log.error("channelInactive ", exception);
+        }
+        ctx.close();
+    }
 }

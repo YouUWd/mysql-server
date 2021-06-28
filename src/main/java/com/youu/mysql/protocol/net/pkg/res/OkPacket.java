@@ -29,8 +29,8 @@ public class OkPacket extends MySQLPacket {
     @Override
     protected void readPayload(ByteBuf buffer) {
         this.header = buffer.readByte();
-        this.affectedRow = MySQLBufUtil.readLengthEncodedInteger(buffer);
-        this.lastInsertId = MySQLBufUtil.readLengthEncodedInteger(buffer);
+        this.affectedRow = MySQLBufUtil.readLenEncInteger(buffer);
+        this.lastInsertId = MySQLBufUtil.readLenEncInteger(buffer);
         this.statusFlags = buffer.readUnsignedShortLE();
         this.warnings = buffer.readUnsignedShortLE();
     }
@@ -38,8 +38,8 @@ public class OkPacket extends MySQLPacket {
     @Override
     protected void writePayload(ByteBuf buffer) {
         buffer.writeByte(header);
-        MySQLBufUtil.writeLengthEncodedInt(buffer, affectedRow);
-        MySQLBufUtil.writeLengthEncodedInt(buffer, lastInsertId);
+        MySQLBufUtil.writeLenEncInt(buffer, affectedRow);
+        MySQLBufUtil.writeLenEncInt(buffer, lastInsertId);
         buffer.writeShortLE(statusFlags);
         buffer.writeShortLE(warnings);
     }

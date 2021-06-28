@@ -30,6 +30,3 @@ build/
 ### VS Code ###
 .vscode/
 
-src/main/java/com/seaboat/
-src/test/java/com/seaboat/
-

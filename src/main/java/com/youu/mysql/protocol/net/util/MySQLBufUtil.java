@@ -29,7 +29,7 @@ public class MySQLBufUtil {
         return buf.readUnsignedIntLE();
     }
 
-    public static long readLengthEncodedInteger(ByteBuf buf) {
+    public static long readLenEncInteger(ByteBuf buf) {
         long firstByte = buf.readByte() & 0xff;
         if (firstByte < NULL_VALUE) {
             return firstByte;
@@ -62,7 +62,7 @@ public class MySQLBufUtil {
     }
 
     public static String readLenEncString(ByteBuf buf, Charset charset) {
-        long strLen = readLengthEncodedInteger(buf);
+        long strLen = readLenEncInteger(buf);
         String str = buf.toString(buf.readerIndex(), (int)strLen, charset);
         buf.skipBytes((int)strLen);
         return str;
@@ -73,14 +73,32 @@ public class MySQLBufUtil {
     }
 
     public static String readNullTerminatedString(ByteBuf buf, Charset charset) {
+        return new String(readNullTerminatedBytes(buf), charset);
+    }
+
+    public static byte[] readNullTerminatedBytes(ByteBuf buf) {
         int nullIndex = buf.indexOf(buf.readerIndex(), buf.capacity(), (byte)0);
         byte[] bytes = new byte[nullIndex - buf.readerIndex()];
         buf.readBytes(bytes);
         buf.skipBytes(1);//skip null
-        return new String(bytes, charset);
+        return bytes;
     }
 
-    public static void writeLengthEncodedInt(ByteBuf buf, Long n) {
+    public static String readEofString(ByteBuf buf) {
+        return readEofString(buf, Charset.defaultCharset());
+    }
+
+    public static String readEofString(ByteBuf buf, Charset charset) {
+        return new String(readEofBytes(buf), charset);
+    }
+
+    public static byte[] readEofBytes(ByteBuf buf) {
+        byte[] bytes = new byte[buf.writerIndex() - buf.readerIndex()];
+        buf.readBytes(bytes);
+        return bytes;
+    }
+
+    public static void writeLenEncInt(ByteBuf buf, Long n) {
         if (n == null) {
             buf.writeByte(NULL_VALUE);
         } else if (n < 0) {
@@ -110,7 +128,7 @@ public class MySQLBufUtil {
     public static void writeLenEncString(ByteBuf buf, String str, Charset charset) {
         byte[] data = str.getBytes(charset);
         long strLen = data.length;
-        writeLengthEncodedInt(buf, strLen);
+        writeLenEncInt(buf, strLen);
         buf.writeBytes(data);
     }
 
@@ -135,6 +153,6 @@ public class MySQLBufUtil {
 
     public static void writeNullTerminatedString(ByteBuf buf, String data, Charset charset) {
         buf.writeCharSequence(data, charset);
-        buf.writeByte(0);
+        buf.writeByte(0x00);
     }
 }
