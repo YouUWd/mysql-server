@@ -1,16 +1,16 @@
 package com.youu.common;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Arrays;
+import java.util.ArrayList;
 
+import lombok.extern.slf4j.Slf4j;
 import org.h2.tools.Server;
+import org.h2.value.DataType;
 import org.junit.Test;
 
 /**
@@ -18,6 +18,7 @@ import org.junit.Test;
  * @Description
  * @Date 2021/6/24
  */
+@Slf4j
 public class JDBCTest {
     @Test
     public void test() throws SQLException, InterruptedException {
@@ -109,36 +110,47 @@ public class JDBCTest {
     }
 
     @Test
-    public void test3() throws InvocationTargetException, IllegalAccessException {
+    public void test3() {
         org.h2.Driver.load();
         try (Connection conn = DriverManager.getConnection("jdbc:h2:mem:d1;MODE=MYSQL;database_to_upper=false", "sa",
             "sa")) {
             Statement stat = conn.createStatement();
-            stat.execute("create table t1 (id int, name varchar(16))");
-            stat.execute("insert into t1 values(1,'a')");
+            stat.execute("CREATE TABLE `t1` (\n"
+                + "  `id` bigint unsigned NOT NULL AUTO_INCREMENT,\n"
+                + "  `s0` decimal(8,0) DEFAULT NULL,\n"
+                + "  `s1` double DEFAULT NULL,\n"
+                + "  `s2` text,\n"
+                + "  `s3` blob,\n"
+                + "  PRIMARY KEY (`id`)\n"
+                + ") ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8");
+            stat.execute("insert into t1 values(1,null,null,null,null)");
 
-            ResultSet resultSet = stat.executeQuery("show databases");
+            ResultSet resultSet = stat.executeQuery("select * from t1");
 
             System.out.println(resultSet);
 
             ResultSetMetaData data = resultSet.getMetaData();
             int columnCount = data.getColumnCount();
-            Class<ResultSetMetaData> metaDataClass = ResultSetMetaData.class;
-            Method[] methods = metaDataClass.getDeclaredMethods();
-            System.out.println(Arrays.toString(methods));
             for (int i = 1; i <= columnCount; i++) {
-                System.out.println("==============");
-                for (Method method : methods) {
-                    if (method.getName().startsWith("get") && method.getParameterCount() == 1) {
-                        method.setAccessible(true);
-                        Object res = method.invoke(data, i);
-                        System.out.println(method.getName() + "->" + res);
-                    }
-                }
+                System.out.println(data.getColumnName(i));
+                int columnType = data.getColumnType(i);
+                System.out.println(columnType);
+                System.out.println(data.getColumnTypeName(i));
+                System.out.println("===============");
             }
-
         } catch (SQLException exception) {
             exception.printStackTrace();
+        }
+
+    }
+
+    @Test
+    public void test4() {
+        org.h2.Driver.load();
+        ArrayList<DataType> types = DataType.getTypes();
+        System.out.println(types.size());
+        for (DataType type : types) {
+            log.info("{} {} {}", type.name, type.sqlType, type);
         }
 
     }

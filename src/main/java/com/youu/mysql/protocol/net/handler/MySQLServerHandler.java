@@ -4,6 +4,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
+import com.mysql.cj.result.Field;
 import com.youu.mysql.protocol.net.constant.MySQLColumnType;
 import com.youu.mysql.protocol.net.pkg.req.ComFieldList;
 import com.youu.mysql.protocol.net.pkg.req.ComInitDB;
@@ -17,11 +18,14 @@ import com.youu.mysql.protocol.net.pkg.res.HandshakePacket;
 import com.youu.mysql.protocol.net.pkg.res.OkPacket;
 import com.youu.mysql.protocol.net.pkg.res.ResultSetPacket;
 import com.youu.mysql.protocol.net.pkg.res.resultset.ColumnDefinitionPacket;
+import com.youu.mysql.protocol.net.storage.H2StorageProvider;
 import com.youu.mysql.protocol.net.storage.StorageProvider;
+import com.youu.mysql.protocol.net.util.ColumnTypeConverter;
 import com.youu.mysql.protocol.net.util.ConnectionId;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.util.AttributeKey;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,6 +37,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Sharable
 public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
+    public static final AttributeKey<Short> CLIENT_CHARSET = AttributeKey.valueOf("client-charset");
+
     private StorageProvider storageProvider;
 
     public MySQLServerHandler(StorageProvider storageProvider) {
@@ -64,6 +70,7 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         log.info("channelRead {} {}", msg, ConnectionId.get());
         if (msg instanceof LoginRequest) {
+            ctx.channel().attr(CLIENT_CHARSET).set(((LoginRequest)msg).getCharacterSet());
             //Response OK for login
             storageProvider.init(((LoginRequest)msg).getDatabase());
             OkPacket ok = OkPacket.builder().build();
@@ -94,11 +101,20 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
                     ResultSetMetaData metaData = resultSet.getMetaData();
                     int columnCount = metaData.getColumnCount();
                     for (int i = 1; i <= columnCount; i++) {
+                        MySQLColumnType type = MySQLColumnType.MYSQL_TYPE_VAR_STRING;
+                        if (metaData instanceof com.mysql.cj.jdbc.result.ResultSetMetaData) {
+                            Field field = ((com.mysql.cj.jdbc.result.ResultSetMetaData)metaData).getFields()[i - 1];
+                            type = MySQLColumnType.lookup(field.getMysqlTypeId());
+                        } else if (storageProvider instanceof H2StorageProvider) {
+                            type = ColumnTypeConverter.h22MySQL(metaData.getColumnType(i),
+                                metaData.getColumnTypeName(i));
+                        }
                         //ColumnDefinitionPacket  charset 应当是client的连接的charset，
                         // 也即show variables like 'character_set_results'; 可从LoginRequest获取
                         resultSetPacket.addColumnDefinition(metaData.getSchemaName(i), metaData.getTableName(i),
                             metaData.getTableName(i), metaData.getColumnLabel(i), metaData.getColumnName(i),
-                            33, metaData.getColumnDisplaySize(i), MySQLColumnType.MYSQL_TYPE_VAR_STRING);
+                            ctx.channel().attr(CLIENT_CHARSET).get(), metaData.getColumnDisplaySize(i),
+                            type);
                     }
                     resultSetPacket.addEofDef();
                     while (resultSet.next()) {
@@ -157,6 +173,10 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
         if (cause instanceof SQLException) {
             errorPacket.setErrorCode(((SQLException)cause).getErrorCode());
             errorPacket.setSqlState(((SQLException)cause).getSQLState());
+            if (((SQLException)cause).getErrorCode()
+                == 4444) {//login error, seq=2 after HandshakePacket 0, LoginRequest 1
+                errorPacket.setSequenceId(++seq);
+            }
         } else {
             errorPacket.setErrorCode(1000);
             errorPacket.setSqlState("10S00");
@@ -167,6 +187,7 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
         try {
+            ctx.channel().attr(CLIENT_CHARSET).set(null);
             storageProvider.release();
         } catch (SQLException exception) {
             log.error("channelInactive ", exception);

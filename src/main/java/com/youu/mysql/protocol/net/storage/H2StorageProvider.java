@@ -23,7 +23,11 @@ public class H2StorageProvider implements StorageProvider {
 
     @Override
     public void init(String schema) throws SQLException {
-        org.h2.Driver.load();
+        try {
+            Class.forName("org.h2.Driver");
+        } catch (Exception e) {
+            throw new SQLException("can not find h2 driver", "28000", 4444);
+        }
         Statement statement = CONNECTION_MAP.get(ConnectionId.get());
         if (statement != null) {
             statement.close();
