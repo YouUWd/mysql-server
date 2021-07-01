@@ -16,7 +16,7 @@
     </modules>
 
     <name>mysql-server</name>
-    <url>http://maven.apache.org</url>
+    <url>https://youuwd.github.io/</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -135,6 +135,17 @@
                 <configuration>
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.target}</target>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-clean-plugin</artifactId>
+                <configuration>
+                    <filesets>
+                        <fileset>
+                            <directory>distribution</directory>
+                        </fileset>
+                    </filesets>
                 </configuration>
             </plugin>
         </plugins>

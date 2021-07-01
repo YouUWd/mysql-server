@@ -11,5 +11,13 @@
 
     <artifactId>mysql-parser</artifactId>
 
+    <dependencies>
+        <dependency>
+            <groupId>com.youu.mysql</groupId>
+            <artifactId>mysql-common</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+    </dependencies>
+
 
 </project>

@@ -34,5 +34,53 @@
             <version>1.0-SNAPSHOT</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.youu.mysql</groupId>
+            <artifactId>mysql-parser</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+
     </dependencies>
+
+    <build>
+        <finalName>mysql-server</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <classpathPrefix>lib/</classpathPrefix>
+                            <mainClass>com.youu.mysql.protocol.MySQLServer</mainClass>
+                        </manifest>
+                    </archive>
+                    <outputDirectory>${project.parent.basedir}/distribution</outputDirectory>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-libs</id>
+                        <!--通过phase配置，将其绑定到process-resources生命周期阶段-->
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <!--排除所有scope为test的依赖-->
+                            <includeScope>compile</includeScope>
+                            <!--依赖保存路径-->
+                            <outputDirectory>${project.parent.basedir}/distribution/lib</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
 </project>
