@@ -12,15 +12,6 @@ public class ColumnDefinitionPacketTest extends TestCase {
     ColumnDefinitionPacket packet = new ColumnDefinitionPacket();
 
     @Test
-    public void test() {
-        ByteBuf buf = Unpooled.buffer(128);
-        packet.setSequenceId((byte)1);
-        //packet.setColumnCount(2);
-        packet.write(buf);
-        System.out.println(packet.read(buf));
-    }
-
-    @Test
     public void testRead1() {
         String hexDump = "20000002036465660264310274310274310269640269640c3f000b000000030000000000";
         ByteBuf buf = Unpooled.wrappedBuffer(

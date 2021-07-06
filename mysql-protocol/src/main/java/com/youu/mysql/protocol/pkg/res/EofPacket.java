@@ -21,7 +21,6 @@ public class EofPacket extends MySQLPacket {
     protected void readPayload(ByteBuf buffer) {
         this.header = buffer.readUnsignedByte();
         this.warnings = buffer.readUnsignedShortLE();
-        buffer.readBytes(statusFlags);
         this.statusFlags = buffer.readUnsignedShortLE();
     }
 
