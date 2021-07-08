@@ -20,6 +20,7 @@ public class ComFieldList extends MySQLPacket {
 
     @Override
     protected void readPayload(ByteBuf buffer) {
+        buffer.skipBytes(1);//skip command id
         this.table = MySQLBufUtil.readNullTerminatedString(buffer);
         if (buffer.isReadable()) { this.fieldWildcard = MySQLBufUtil.readEofString(buffer); }
     }

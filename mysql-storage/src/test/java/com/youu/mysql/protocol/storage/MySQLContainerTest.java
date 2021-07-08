@@ -30,7 +30,7 @@ public class MySQLContainerTest {
     @BeforeClass
     public static void init() {
         mysql = new MySQLContainer<>(MYSQL_80_IMAGE)
-            .withDatabaseName("db1")
+            //.withDatabaseName("db1")
             .withUsername("root")
             .withPassword("pass");
         mysql.start();
@@ -38,9 +38,17 @@ public class MySQLContainerTest {
 
     @Test
     public void test() throws SQLException {
-        ResultSet resultSet = performQuery(mysql, "SELECT 1");
-        int resultSetInt = resultSet.getInt(1);
-        assertEquals("A basic SELECT query succeeds", 1, resultSetInt);
+        System.out.println(mysql.getDatabaseName());
+        //mysql.withDatabaseName("d2");
+        execute(mysql, "create database d1");
+        execute(mysql, "use d1");
+        System.out.println(mysql.getTestQueryString());
+        mysql.withDatabaseName("d1");
+        System.out.println(mysql.getDatabaseName());
+
+        ResultSet resultSet = performQuery(mysql, "SELECT database()");
+        String resultSetInt = resultSet.getString(1);
+        assertEquals("A basic SELECT query succeeds", "d1", resultSetInt);
 
     }
 

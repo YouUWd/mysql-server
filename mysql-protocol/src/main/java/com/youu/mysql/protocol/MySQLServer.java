@@ -41,6 +41,8 @@ public class MySQLServer {
         // Configure the server.
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup();
+        // use H2StorageProvider for test
+        // use MySQLStorageProvider can fit all MySQL features
         final MySQLServerHandler serverHandler = new MySQLServerHandler(new H2StorageProvider());
         try {
             ServerBootstrap b = new ServerBootstrap();
@@ -50,7 +52,7 @@ public class MySQLServer {
                 .handler(new LoggingHandler(LogLevel.INFO))
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override
-                    public void initChannel(SocketChannel ch) throws Exception {
+                    public void initChannel(SocketChannel ch) {
                         ChannelPipeline p = ch.pipeline();
                         if (sslCtx != null) {
                             p.addLast(sslCtx.newHandler(ch.alloc()));

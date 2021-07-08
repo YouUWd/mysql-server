@@ -126,10 +126,23 @@ public class MySQLBufUtil {
     }
 
     public static void writeLenEncString(ByteBuf buf, String str, Charset charset) {
-        byte[] data = str.getBytes(charset);
-        long strLen = data.length;
-        writeLenEncInt(buf, strLen);
-        buf.writeBytes(data);
+        /**
+         * https://dev.mysql.com/doc/internals/en/com-query-response.html#packet-ProtocolText::Resultset
+         * ProtocolText::ResultsetRow:
+         * A row with the data for each column.
+         *
+         * NULL is sent as 0xfb
+         *
+         * everything else is converted into a string and is sent as Protocol::LengthEncodedString.
+         */
+        if (str == null) {
+            buf.writeByte(0xfb);
+        } else {
+            byte[] data = str.getBytes(charset);
+            long strLen = data.length;
+            writeLenEncInt(buf, strLen);
+            buf.writeBytes(data);
+        }
     }
 
     public static <E extends Enum<E>> EnumSet<E> readIntEnumSet(ByteBuf buf, Class<E> enumClass) {

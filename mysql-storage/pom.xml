@@ -35,5 +35,10 @@
             <artifactId>mysql-connector-java</artifactId>
             <version>8.0.25</version>
         </dependency>
+        <dependency>
+            <groupId>org.rocksdb</groupId>
+            <artifactId>rocksdbjni</artifactId>
+            <version>5.5.1</version>
+        </dependency>
     </dependencies>
 </project>
