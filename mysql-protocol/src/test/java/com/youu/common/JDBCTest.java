@@ -39,41 +39,6 @@ public class JDBCTest {
     }
 
     @Test
-    public void testNativeAuthenticationProvider() {
-        String handshake
-            =
-            "0a382e302e3232000d0000005d722c1213317c7800ffffff0200ffc7150000000000000000000044390f0657293f1b501c2756006d7973716c5f6e61746976655f70617373776f726400";
-        byte[] bytes = ByteBufUtil.decodeHexDump(handshake);
-        NativePacketPayload payload = new NativePacketPayload(bytes);
-
-        Properties info = new Properties();
-        info.put("user", "root");
-        info.put("password", "pass");
-        JdbcPropertySetImpl propertySet = new JdbcPropertySetImpl();
-        propertySet.initializeProperties(info);
-
-        NativeProtocol protocol = new NativeProtocol(
-            LogFactory.getLogger(propertySet.getStringProperty(PropertyKey.logger).getStringValue(),
-                Log.LOGGER_INSTANCE_NAME));
-
-        System.out.println(protocol);
-
-        NativeCapabilities nc = new NativeCapabilities();
-        nc.setInitialHandshakePacket(payload);
-
-        AuthenticationPlugin plugin = new MysqlNativePasswordPlugin();
-
-        plugin.init(protocol);
-
-        plugin.setAuthenticationParameters("root", "pass");
-        NativePacketPayload fromServer = nc.getInitialHandshakePacket();
-        ArrayList<Object> toServer = Lists.newArrayList();
-        plugin.nextAuthenticationStep(fromServer, toServer);
-        System.out.println(toServer);
-
-    }
-
-    @Test
     public void testAuthenticationPlugin() {
         String handshake
             =

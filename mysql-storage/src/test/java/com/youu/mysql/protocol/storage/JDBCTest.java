@@ -173,7 +173,7 @@ public class JDBCTest {
 
         JdbcConnection instance = ConnectionImpl.getInstance(conStr.getMainHost());
         Statement statement = instance.createStatement();
-        ResultSet resultSet = statement.executeQuery("/*+ SET_VAR(sort_buffer_size = 16M) */ select 1");
+        ResultSet resultSet = statement.executeQuery("select 1");
         while (resultSet.next()) {
             System.out.println(resultSet.getInt(1));
         }
@@ -188,8 +188,8 @@ public class JDBCTest {
         String jdbcUrl
             = "jdbc:mysql://localhost:3306?useSSL=false&allowPublicKeyRetrieval=true";
         Properties info = new Properties();
-        info.put("user", "sha2user");
-        info.put("password", "password");
+        info.put("user", "root");
+        info.put("password", "pass");
         ConnectionUrl conStr = ConnectionUrl.getConnectionUrlInstance(jdbcUrl, info);
         JdbcPropertySetImpl propertySet = new JdbcPropertySetImpl();
         propertySet.initializeProperties(info);

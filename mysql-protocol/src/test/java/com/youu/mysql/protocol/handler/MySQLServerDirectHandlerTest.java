@@ -67,6 +67,12 @@ public class MySQLServerDirectHandlerTest {
         group.shutdownGracefully();
     }
 
+    /**
+     * MySQLContainer 默认 caching_sha2_password，目前暂时无法处理
+     *
+     * @throws InterruptedException
+     * @throws DigestException
+     */
     @Ignore
     @Test
     public void test() throws InterruptedException, DigestException {
