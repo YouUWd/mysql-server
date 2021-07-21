@@ -51,6 +51,7 @@ public class HandshakePacket extends MySQLPacket {
         this.capabilityFlags2 = buffer.readUnsignedShort();
         this.authPluginDataLength = buffer.readUnsignedByte();
         buffer.readBytes(RESERVED);
+        // Protocol::HandshakeV10 文档描述不符合实际authPluginDataPart后面都多出了一个0x00，不参与密码加密
         byte[] authPluginDataPart2 = new byte[Math.max(13, this.authPluginDataLength - 8)];
         buffer.readBytes(authPluginDataPart2);
         this.authPluginDataPart2 = authPluginDataPart2;

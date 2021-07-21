@@ -13,5 +13,5 @@ import lombok.Data;
 public class ConnectionAttr {
     private int connectionId;
     private String schema;
-    private Short clientCharset;
+    private int clientCharset;
 }

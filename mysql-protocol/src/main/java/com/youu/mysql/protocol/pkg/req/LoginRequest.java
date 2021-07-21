@@ -32,7 +32,7 @@ import static com.mysql.cj.protocol.a.NativeServerSession.CLIENT_SECURE_CONNECTI
 public class LoginRequest extends MySQLPacket {
     private long capabilityFlags;
     private long maxPacketSize;
-    private short characterSet;
+    private int characterSet;
     private static final byte[] RESERVED = new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0};
     private String username;

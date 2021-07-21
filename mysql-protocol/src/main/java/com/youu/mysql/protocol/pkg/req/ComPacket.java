@@ -1,7 +1,5 @@
 package com.youu.mysql.protocol.pkg.req;
 
-import java.nio.charset.Charset;
-
 import com.youu.mysql.protocol.pkg.MySQLPacket;
 import io.netty.buffer.ByteBuf;
 import lombok.AllArgsConstructor;
@@ -19,22 +17,20 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ComPacket extends MySQLPacket {
-    private static final byte ID = -1;
-    private String payload;
+    private byte id;
+    private byte[] payload;
 
     @Override
     protected void readPayload(ByteBuf buffer) {
-        buffer.skipBytes(1);//skip command id
-        byte[] pb = new byte[getPayloadLength() - 1];
-        buffer.readBytes(pb);
-        this.payload = new String(pb, Charset.defaultCharset());
+        this.id = buffer.readByte();
+        this.payload = new byte[getPayloadLength() - 1];
+        buffer.readBytes(this.payload);
     }
 
     @Override
     protected void writePayload(ByteBuf buffer) {
-        buffer.writeByte(ID);
-        byte[] bytes = payload.getBytes(Charset.defaultCharset());
-        buffer.writeBytes(bytes);
+        buffer.writeByte(id);
+        buffer.writeBytes(payload);
     }
 
 }

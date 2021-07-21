@@ -5,6 +5,7 @@ import java.sql.SQLException;
 
 public interface StorageProvider {
 
+
     void init(String schema) throws SQLException;
 
     void execute(String sql) throws SQLException;

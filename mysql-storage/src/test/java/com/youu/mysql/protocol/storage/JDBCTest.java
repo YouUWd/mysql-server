@@ -7,10 +7,16 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Properties;
 
+import com.mysql.cj.conf.ConnectionUrl;
+import com.mysql.cj.jdbc.ConnectionImpl;
+import com.mysql.cj.jdbc.JdbcConnection;
+import com.mysql.cj.jdbc.JdbcPropertySetImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.h2.tools.Server;
 import org.h2.value.DataType;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -152,6 +158,50 @@ public class JDBCTest {
         for (DataType type : types) {
             log.info("{} {} {}", type.name, type.sqlType, type);
         }
+    }
+
+    @Ignore
+    @Test
+    public void testMySQL1() throws SQLException {
+        String jdbcUrl = "jdbc:mysql://localhost:3306?useSSL=false";
+        Properties info = new Properties();
+        info.put("user", "root");
+        info.put("password", "pass");
+        ConnectionUrl conStr = ConnectionUrl.getConnectionUrlInstance(jdbcUrl, info);
+        JdbcPropertySetImpl propertySet = new JdbcPropertySetImpl();
+        propertySet.initializeProperties(info);
+
+        JdbcConnection instance = ConnectionImpl.getInstance(conStr.getMainHost());
+        Statement statement = instance.createStatement();
+        ResultSet resultSet = statement.executeQuery("/*+ SET_VAR(sort_buffer_size = 16M) */ select 1");
+        while (resultSet.next()) {
+            System.out.println(resultSet.getInt(1));
+        }
+        resultSet.close();
+        instance.close();
+
+    }
+
+    @Ignore
+    @Test
+    public void testMySQL2() throws SQLException {
+        String jdbcUrl
+            = "jdbc:mysql://localhost:3306?useSSL=false&allowPublicKeyRetrieval=true";
+        Properties info = new Properties();
+        info.put("user", "sha2user");
+        info.put("password", "password");
+        ConnectionUrl conStr = ConnectionUrl.getConnectionUrlInstance(jdbcUrl, info);
+        JdbcPropertySetImpl propertySet = new JdbcPropertySetImpl();
+        propertySet.initializeProperties(info);
+
+        JdbcConnection instance = ConnectionImpl.getInstance(conStr.getMainHost());
+        Statement statement = instance.createStatement();
+        ResultSet resultSet = statement.executeQuery("select 1");
+        while (resultSet.next()) {
+            System.out.println(resultSet.getInt(1));
+        }
+        resultSet.close();
+        instance.close();
 
     }
 }

@@ -44,4 +44,16 @@ public class ErrorPacket extends MySQLPacket {
         buffer.writeBytes(errorMessage.getBytes());
     }
 
+    public void generate(String errorMsg) {
+        generate((byte)1, 1000, "10S00", errorMsg);
+    }
+
+    public void generate(byte seq, int errorCode, String sqlState, String errorMsg) {
+        setSequenceId(seq);
+        setSqlStateMarker("#");
+        setErrorMessage(errorMsg);
+        setErrorCode(errorCode);
+        setSqlState(sqlState);
+    }
+
 }

@@ -1,5 +1,13 @@
 package com.youu.mysql.protocol;
 
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.concurrent.CountDownLatch;
+
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -16,19 +24,76 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Ignore;
+import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.utility.DockerImageName;
 
 @Slf4j
-public class NettyTcpProxyTest {
+public class NettyMySQLProxyTest {
 
-    private static final int PORT = 3306;
-    private static final String PROXY_2_HOST = "127.0.0.1";
-    private static final int PROXY_2_PORT = 33050;
+    private static int PORT;
+    private static String PROXY_2_HOST;
+    private static int PROXY_2_PORT;
 
-    @Ignore
+    public static final DockerImageName MYSQL_80_IMAGE = DockerImageName.parse("mysql:8.0.25");
+    private static MySQLContainer<?> mysql;
+
+    private static final String USER_NAME = "root";
+    private static final String PASS_WORD = "pass";
+
+    @BeforeClass
+    public static void init() {
+        mysql = new MySQLContainer<>(MYSQL_80_IMAGE)
+            .withDatabaseName("test")
+            .withUsername(USER_NAME)
+            .withPassword(PASS_WORD);
+        mysql.start();
+        String jdbcUrl = mysql.getJdbcUrl();
+        URI uri = URI.create(jdbcUrl.substring(5));
+        PROXY_2_HOST = uri.getHost();
+        PROXY_2_PORT = uri.getPort();
+        log.info("{} Proxy to {} {}", jdbcUrl, PROXY_2_HOST, PROXY_2_PORT);
+    }
+
     @Test
-    public void testNettyTcpProxyServer() throws InterruptedException {
+    public void test() throws ClassNotFoundException, SQLException, InterruptedException {
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        new Thread(() -> {
+            try {
+                startNettyTcpProxyServer(countDownLatch);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }).start();
+        countDownLatch.await();
+        Class.forName("com.mysql.cj.jdbc.Driver");
+
+        Statement statement = DriverManager.getConnection("jdbc:mysql://127.0.0.1:" + PORT + "/test?useSSL=true",
+            USER_NAME,
+            PASS_WORD)
+            .createStatement();
+
+        ResultSet resultSet = performQuery(statement, "SELECT 1");
+        while (resultSet.next()) {
+            log.info("ResultSet {}", resultSet.getInt(1));
+            Assert.assertEquals(resultSet.getInt(1), 1);
+        }
+        statement.close();
+    }
+
+    protected void execute(Statement statement, String sql) throws SQLException {
+        statement.execute(sql);
+    }
+
+    protected ResultSet performQuery(Statement statement, String sql) throws SQLException {
+        statement.execute(sql);
+        ResultSet resultSet = statement.getResultSet();
+        return resultSet;
+    }
+
+    public void startNettyTcpProxyServer(CountDownLatch countDownLatch) throws InterruptedException {
 
         // Configure the server.
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
@@ -43,16 +108,17 @@ public class NettyTcpProxyTest {
                     @Override
                     public void initChannel(SocketChannel ch) {
                         ChannelPipeline p = ch.pipeline();
-                        p.addLast(new LoggingHandler(LogLevel.INFO));
                         p.addLast(new NettyProxyServerHandler());
                     }
                 });
 
             // Start the server.
-            ChannelFuture f = b.bind(PORT).sync();
-
+            ChannelFuture f = b.bind(0).sync();
+            PORT = ((InetSocketAddress)f.channel().localAddress()).getPort();
+            countDownLatch.countDown();
             // Wait until the server socket is closed.
             f.channel().closeFuture().sync();
+            log.info("xxxxxxxxxxxxxxxxxxxxxxxxxxxx");
         } finally {
             // Shut down all event loops to terminate all threads.
             bossGroup.shutdownGracefully();
@@ -74,7 +140,6 @@ public class NettyTcpProxyTest {
                     @Override
                     protected void initChannel(SocketChannel ch) {
                         ChannelPipeline p = ch.pipeline();
-                        p.addLast(new LoggingHandler(LogLevel.INFO));
                         p.addLast(new NettyProxyClientHandler(ctx.channel()));
                     }
                 });

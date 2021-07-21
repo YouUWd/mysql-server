@@ -27,7 +27,25 @@ java -Dport=6060 -jar distribution/mysql-server.jar
 mysql -h127.0.0.1 -P3306
 ```
 
-
+## 想要体验分布式版本，请参考注释配置数据源
+> mysql-server/mysql-storage/src/main/resources/config.properties 
+```
+schema=127.0.0.1:3306
+username=root
+password=pass
+# 新增用户需要在这里配置，英文逗号分隔，后续需要自动注册
+user_pass=root:pass
+storages=127.0.0.1:33050,127.0.0.1:33060
+```
+```
+# 使用HINT指定具体的store查询
+mysql> /*+ USE_STORE(1)  */select 1;
++---+
+| 1 |
++---+
+| 1 |
++---+
+```
 
 ## Road Map
 - Parse引擎
