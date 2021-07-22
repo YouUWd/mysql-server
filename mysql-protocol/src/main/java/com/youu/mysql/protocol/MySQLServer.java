@@ -2,6 +2,7 @@ package com.youu.mysql.protocol;
 
 import com.youu.mysql.protocol.codec.MySQLDecoder;
 import com.youu.mysql.protocol.codec.MySQLEncoder;
+import com.youu.mysql.protocol.handler.MySQLServerDirectHandler;
 import com.youu.mysql.protocol.handler.MySQLServerHandler;
 import com.youu.mysql.protocol.storage.impl.H2StorageProvider;
 import io.netty.bootstrap.ServerBootstrap;
@@ -29,6 +30,15 @@ public class MySQLServer {
     static final int PORT = Integer.parseInt(System.getProperty("port", "3306"));
 
     public static void main(String[] args) throws Exception {
+        boolean cluster = Boolean.valueOf(System.getProperty("cluster", "false"));
+        if (cluster) {
+            startMySQLCluster(args);
+        } else {
+            startWithH2(args);
+        }
+    }
+
+    public static void startWithH2(String[] args) throws Exception {
         // Configure SSL.
         final SslContext sslCtx;
         if (SSL) {
@@ -60,6 +70,52 @@ public class MySQLServer {
                         //p.addLast(new LoggingHandler(LogLevel.INFO));
                         p.addLast(new MySQLDecoder());
                         p.addLast(new MySQLEncoder());
+                        p.addLast(serverHandler);
+                    }
+                });
+
+            // Start the server.
+            ChannelFuture f = b.bind(PORT).sync();
+
+            // Wait until the server socket is closed.
+            f.channel().closeFuture().sync();
+        } finally {
+            // Shut down all event loops to terminate all threads.
+            bossGroup.shutdownGracefully();
+            workerGroup.shutdownGracefully();
+        }
+    }
+
+    public static void startMySQLCluster(String[] args) throws Exception {
+        // Configure SSL.
+        final SslContext sslCtx;
+        if (SSL) {
+            SelfSignedCertificate ssc = new SelfSignedCertificate();
+            sslCtx = SslContextBuilder.forServer(ssc.certificate(), ssc.privateKey()).build();
+        } else {
+            sslCtx = null;
+        }
+
+        // Configure the server.
+        EventLoopGroup bossGroup = new NioEventLoopGroup(1);
+        EventLoopGroup workerGroup = new NioEventLoopGroup();
+
+        final MySQLServerDirectHandler serverHandler = new MySQLServerDirectHandler();
+        try {
+            ServerBootstrap b = new ServerBootstrap();
+            b.group(bossGroup, workerGroup)
+                .channel(NioServerSocketChannel.class)
+                .option(ChannelOption.SO_BACKLOG, 100)
+                .handler(new LoggingHandler(LogLevel.INFO))
+                .childHandler(new ChannelInitializer<SocketChannel>() {
+                    @Override
+                    public void initChannel(SocketChannel ch) {
+                        ChannelPipeline p = ch.pipeline();
+                        if (sslCtx != null) {
+                            p.addLast(sslCtx.newHandler(ch.alloc()));
+                        }
+                        //p.addLast(new LoggingHandler(LogLevel.INFO));
+                        p.addLast(new MySQLDecoder());
                         p.addLast(serverHandler);
                     }
                 });

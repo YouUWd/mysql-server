@@ -160,6 +160,11 @@ public class JDBCTest {
         }
     }
 
+    /**
+     * 以 --default-authentication-plugin=caching_sha2_password 方式启动mysql(8.0后默认)
+     *
+     * @throws SQLException
+     */
     @Ignore
     @Test
     public void testMySQL1() throws SQLException {
@@ -182,13 +187,18 @@ public class JDBCTest {
 
     }
 
+    /**
+     * 以 --default-authentication-plugin=mysql_native_password 方式启动mysql,但是创建一个caching_sha2_password的用户sha2
+     *
+     * @throws SQLException
+     */
     @Ignore
     @Test
     public void testMySQL2() throws SQLException {
         String jdbcUrl
-            = "jdbc:mysql://localhost:3306?useSSL=false&allowPublicKeyRetrieval=true";
+            = "jdbc:mysql://localhost:3306?useSSL=false";
         Properties info = new Properties();
-        info.put("user", "root");
+        info.put("user", "sha2");
         info.put("password", "pass");
         ConnectionUrl conStr = ConnectionUrl.getConnectionUrlInstance(jdbcUrl, info);
         JdbcPropertySetImpl propertySet = new JdbcPropertySetImpl();
