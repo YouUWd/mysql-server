@@ -1,11 +1,14 @@
-package com.youu.mysql.protocol.storage;
+package com.youu.mysql.storage;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.Lists;
+import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
@@ -24,14 +27,14 @@ import org.rocksdb.WriteOptions;
  */
 public class RocksDBTest {
     @Test
-    public void test() {
+    public void test() throws IOException {
         RocksDB.loadLibrary();
         // the Options class contains a set of configurable DB options
         // that determines the behaviour of the database.
         try (final Options options = new Options().setCreateIfMissing(true)) {
 
             // a factory method that returns a RocksDB instance
-            try (final RocksDB db = RocksDB.open(options, "/tmp/rocksdb/d1")) {
+            try (final RocksDB db = RocksDB.open(options, "./d1")) {
                 db.put("a".getBytes(), "A".getBytes());
                 System.out.println(Arrays.toString(db.get("a".getBytes())));
                 System.out.println(Arrays.toString(db.get("b".getBytes())));
@@ -40,11 +43,13 @@ public class RocksDBTest {
         } catch (RocksDBException e) {
             // do some error handling
             e.printStackTrace();
+        } finally {
+            FileUtils.deleteDirectory(new File("./d1"));
         }
     }
 
     @Test
-    public void test1() {
+    public void test1() throws IOException {
         // a static method that loads the RocksDB C++ library.
         RocksDB.loadLibrary();
 
@@ -64,7 +69,7 @@ public class RocksDBTest {
             try (final DBOptions options = new DBOptions()
                 .setCreateIfMissing(true)
                 .setCreateMissingColumnFamilies(true);
-                 final RocksDB db = RocksDB.open(options, "/tmp/rocksdb/d2", cfDescriptors,
+                 final RocksDB db = RocksDB.open(options, "./d2", cfDescriptors,
                      columnFamilyHandleList)) {
 
                 try {
@@ -98,6 +103,8 @@ public class RocksDBTest {
             } catch (RocksDBException e) {
                 e.printStackTrace();
             }
-        } // frees the column family options
+        } finally {// frees the column family options
+            FileUtils.deleteDirectory(new File("./d2"));
+        }
     }
 }

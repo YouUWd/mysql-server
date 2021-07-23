@@ -1,4 +1,4 @@
-package com.youu.mysql.protocol.storage;
+package com.youu.mysql.storage;
 
 import java.sql.Connection;
 import java.sql.DriverManager;

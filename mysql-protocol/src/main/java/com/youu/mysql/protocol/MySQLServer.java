@@ -4,7 +4,7 @@ import com.youu.mysql.protocol.codec.MySQLDecoder;
 import com.youu.mysql.protocol.codec.MySQLEncoder;
 import com.youu.mysql.protocol.handler.MySQLServerDirectHandler;
 import com.youu.mysql.protocol.handler.MySQLServerHandler;
-import com.youu.mysql.protocol.storage.impl.H2StorageProvider;
+import com.youu.mysql.storage.impl.H2StorageProvider;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;

@@ -1,10 +1,9 @@
-package com.youu.mysql.protocol.storage;
+package com.youu.mysql.storage;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public interface StorageProvider {
-
 
     void init(String schema) throws SQLException;
 

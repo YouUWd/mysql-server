@@ -1,7 +1,7 @@
 package com.youu.mysql.protocol.common;
 
 import com.youu.mysql.protocol.pkg.req.LoginRequest;
-import com.youu.mysql.protocol.storage.StorageConfig.HostPort;
+import com.youu.mysql.storage.StorageConfig.HostPort;
 import io.netty.bootstrap.Bootstrap;
 
 /**

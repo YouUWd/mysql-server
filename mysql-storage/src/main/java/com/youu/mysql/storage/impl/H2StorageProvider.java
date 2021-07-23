@@ -1,4 +1,4 @@
-package com.youu.mysql.protocol.storage.impl;
+package com.youu.mysql.storage.impl;
 
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -8,7 +8,7 @@ import java.util.Map;
 
 import com.google.common.collect.Maps;
 import com.youu.mysql.common.util.ConnectionId;
-import com.youu.mysql.protocol.storage.StorageProvider;
+import com.youu.mysql.storage.StorageProvider;
 import lombok.extern.slf4j.Slf4j;
 
 /**

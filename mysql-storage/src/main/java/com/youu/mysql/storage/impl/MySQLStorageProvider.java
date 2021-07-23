@@ -1,4 +1,4 @@
-package com.youu.mysql.protocol.storage.impl;
+package com.youu.mysql.storage.impl;
 
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -6,10 +6,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
 
-import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import com.youu.mysql.common.util.ConnectionId;
-import com.youu.mysql.protocol.storage.StorageProvider;
+import com.youu.mysql.storage.StorageProvider;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -21,7 +20,14 @@ import lombok.extern.slf4j.Slf4j;
 public class MySQLStorageProvider implements StorageProvider {
 
     private static final Map<Integer, Statement> CONNECTION_MAP = Maps.newConcurrentMap();
-    private static final String URL = "jdbc:mysql://localhost:33050/%s?useSSL=true";
+    private String url;
+    private String username, password;
+
+    public MySQLStorageProvider(String url, String username, String password) {
+        this.url = url;
+        this.username = username;
+        this.password = password;
+    }
 
     @Override
     public void init(String schema) throws SQLException {
@@ -34,8 +40,15 @@ public class MySQLStorageProvider implements StorageProvider {
         if (statement != null) {
             statement.close();
         }
-        String jdbcUrl = String.format(URL, Strings.nullToEmpty(schema));
-        CONNECTION_MAP.put(ConnectionId.get(), DriverManager.getConnection(jdbcUrl, "root", "pass").createStatement());
+        int ds = url.indexOf("/", 13);
+        int de = url.indexOf("?", ds);
+        de = de > 0 ? de : url.length();
+        String jdbcUrl = url;
+        if (ds > 0) {
+            jdbcUrl = url.replaceFirst(url.substring(ds, de), "/" + schema);
+        }
+        CONNECTION_MAP.put(ConnectionId.get(),
+            DriverManager.getConnection(jdbcUrl, username, password).createStatement());
     }
 
     @Override

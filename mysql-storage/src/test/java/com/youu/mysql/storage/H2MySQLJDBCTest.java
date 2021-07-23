@@ -1,4 +1,4 @@
-package com.youu.mysql.protocol.storage;
+package com.youu.mysql.storage;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -25,7 +25,7 @@ import org.junit.Test;
  * @Date 2021/6/24
  */
 @Slf4j
-public class JDBCTest {
+public class H2MySQLJDBCTest {
     @Test
     public void test() throws SQLException, InterruptedException {
         Server server = Server.createTcpServer("-tcpPort", "9101", "-baseDir", "~/h2/tcp", "-ifNotExists");
@@ -67,7 +67,8 @@ public class JDBCTest {
                 System.out.println((rs.getString(1)));
             }
             System.out.println("=============");
-            stat.execute("create database d2");
+            //h2  create database is create schema
+            stat.execute("create schema d2");
             stat.execute("drop table if exists t1");
             stat.execute("drop table if exists T1");
             stat.execute("create table if not exists t1(id int,name varchar(16))");
@@ -158,6 +159,32 @@ public class JDBCTest {
         for (DataType type : types) {
             log.info("{} {} {}", type.name, type.sqlType, type);
         }
+    }
+
+    @Test
+    public void testJDBCUrl() {
+        String s = "jdbc:mysql://localhost:33050/d1?useSSL=true";
+        int ds = s.indexOf("/", 13);
+        int de = s.indexOf("?", ds);
+        System.out.println(ds);
+        System.out.println(de);
+        System.out.println(s.substring(ds, de));
+        System.out.println(s.replaceFirst(s.substring(ds, de), "/" + "aaa"));
+
+        s = "jdbc:mysql://localhost:33050/d1";
+        ds = s.indexOf("/", 13);
+        de = s.indexOf("?", ds);
+        de = de > 0 ? de : s.length();
+        System.out.println(ds);
+        System.out.println(de);
+        System.out.println(s.substring(ds, de));
+        System.out.println(s.replaceFirst(s.substring(ds, de), "/" + "aaa"));
+
+        s = "jdbc:mysql://localhost:33050?useSSL=true";
+        ds = s.indexOf("/", 13);
+        de = s.indexOf("?", ds);
+        System.out.println(ds);
+        System.out.println(de);
     }
 
     /**

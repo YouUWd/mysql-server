@@ -1,4 +1,4 @@
-package com.youu.mysql.protocol.storage;
+package com.youu.mysql.storage;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -142,6 +142,22 @@ public class StorageConfig {
 
         public int getPort() {
             return port;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) { return true; }
+
+            if (o == null || getClass() != o.getClass()) { return false; }
+
+            HostPort h = (HostPort)o;
+
+            return h.host.equals(this.host) && h.port == this.port;
+        }
+
+        @Override
+        public int hashCode() {
+            return (this.host + this.port).hashCode();
         }
 
         @Override

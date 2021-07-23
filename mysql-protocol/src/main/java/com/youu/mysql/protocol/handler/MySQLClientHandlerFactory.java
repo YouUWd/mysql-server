@@ -6,7 +6,7 @@ import com.mysql.cj.protocol.Security;
 import com.youu.mysql.protocol.common.StorageProperties;
 import com.youu.mysql.protocol.pkg.req.LoginRequest;
 import com.youu.mysql.protocol.pkg.res.HandshakePacket;
-import com.youu.mysql.protocol.storage.StorageConfig;
+import com.youu.mysql.storage.StorageConfig;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
 import org.apache.commons.pool2.BaseKeyedPooledObjectFactory;
