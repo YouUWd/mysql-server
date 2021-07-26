@@ -2,6 +2,7 @@ package com.youu.mysql.protocol.handler;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import com.youu.mysql.protocol.pkg.MySQLPacket;
 import io.netty.buffer.ByteBuf;
@@ -19,7 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 public class MySQLClientHandler extends ChannelInboundHandlerAdapter {
     private ChannelHandlerContext ctx;
 
-    final BlockingQueue<ByteBuf> answer = new LinkedBlockingQueue<>();
+    final BlockingQueue<ByteBuf> answer = new LinkedBlockingQueue<>(1);
 
     public ByteBuf handshake() {
         //HandShakeResponse without request
@@ -27,7 +28,7 @@ public class MySQLClientHandler extends ChannelInboundHandlerAdapter {
         boolean interrupted = false;
         for (; ; ) {
             try {
-                result = answer.take();
+                result = answer.poll(3, TimeUnit.SECONDS);
                 break;
             } catch (InterruptedException ignore) {
                 interrupted = true;

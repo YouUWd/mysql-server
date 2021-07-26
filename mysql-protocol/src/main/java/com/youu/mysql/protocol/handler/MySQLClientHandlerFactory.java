@@ -3,6 +3,7 @@ package com.youu.mysql.protocol.handler;
 import com.google.common.primitives.Bytes;
 import com.mysql.cj.CharsetMapping;
 import com.mysql.cj.protocol.Security;
+import com.mysql.cj.util.StringUtils;
 import com.youu.mysql.protocol.common.StorageProperties;
 import com.youu.mysql.protocol.pkg.req.LoginRequest;
 import com.youu.mysql.protocol.pkg.res.HandshakePacket;
@@ -38,9 +39,20 @@ public class MySQLClientHandlerFactory extends BaseKeyedPooledObjectFactory<Stor
         byte[] seed = Bytes.concat(authPluginDataPart1, authPluginDataPart2True);
 
         LoginRequest loginRequest = properties.getLoginRequest();
-        byte[] passes = Security.scramble411(StorageConfig.getConfig().getUserPass().get(loginRequest.getUsername()),
-            seed,
-            CharsetMapping.getJavaEncodingForCollationIndex(loginRequest.getCharacterSet()));
+        byte[] passes;
+        if ("caching_sha2_password".equals(handshakePacket.getAuthPluginName())) {
+            passes = Security
+                .scrambleCachingSha2(
+                    StringUtils.getBytes(StorageConfig.getConfig().getUserPass().get(loginRequest.getUsername()),
+                        CharsetMapping.getJavaEncodingForCollationIndex(loginRequest.getCharacterSet())),
+                    seed);
+            loginRequest.setAuthPluginName("caching_sha2_password");
+        } else {
+            passes = Security.scramble411(StorageConfig.getConfig().getUserPass().get(loginRequest.getUsername()),
+                seed,
+                CharsetMapping.getJavaEncodingForCollationIndex(loginRequest.getCharacterSet()));
+        }
+
         loginRequest.setAuthResponse(passes);
 
         handler.execute(loginRequest);

@@ -19,6 +19,7 @@ public class LoginRequestTest extends TestCase {
             ByteBufUtil.decodeHexDump(hexDump));
         LoginRequest read = (LoginRequest)packet.read(buf);
         System.out.println(read);
+
         ByteBuf buf1 = Unpooled.buffer(1024);
         read.write(buf1);
         Assert.assertEquals(hexDump, ByteBufUtil.hexDump(buf1));
