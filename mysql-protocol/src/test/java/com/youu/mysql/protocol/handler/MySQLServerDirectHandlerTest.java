@@ -17,17 +17,11 @@ import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Test;
 
 @Slf4j
 public class MySQLServerDirectHandlerTest extends BaseTest {
-
-    @AfterClass
-    public static void destroy() {
-        group.shutdownGracefully();
-    }
 
     /**
      * MySQLContainer 默认 caching_sha2_password，目前暂时无法处理

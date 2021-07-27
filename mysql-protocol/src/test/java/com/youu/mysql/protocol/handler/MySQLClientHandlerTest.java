@@ -72,7 +72,6 @@ public class MySQLClientHandlerTest extends BaseTest {
     @AfterClass
     public static void destroy() {
         handler.execute(new ComQuit());
-        group.shutdownGracefully();
     }
 
     @Test
