@@ -7,64 +7,32 @@ import com.google.common.primitives.Bytes;
 import com.mysql.cj.CharsetMapping;
 import com.mysql.cj.protocol.Security;
 import com.mysql.cj.util.StringUtils;
-import com.youu.mysql.protocol.codec.MySQLEncoder;
+import com.youu.mysql.protocol.BaseTest;
 import com.youu.mysql.protocol.pkg.req.ComQuery;
 import com.youu.mysql.protocol.pkg.req.ComQuit;
 import com.youu.mysql.protocol.pkg.req.LoginRequest;
 import com.youu.mysql.protocol.pkg.res.HandshakePacket;
-import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioSocketChannel;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.utility.DockerImageName;
 
-public class MySQLClientHandlerTest {
-    public static final DockerImageName MYSQL_80_IMAGE = DockerImageName.parse("mysql:8.0.25");
+public class MySQLClientHandlerTest extends BaseTest {
 
-    private static final String USER_NAME = "root";
-    private static final String PASS_WORD = "pass";
-    private static final EventLoopGroup GROUP = new NioEventLoopGroup();
-
-    private static final Bootstrap BOOTSTRAP = new Bootstrap().group(GROUP)
-        .channel(NioSocketChannel.class)
-        .handler(new ChannelInitializer<SocketChannel>() {
-                     @Override
-                     protected void initChannel(SocketChannel ch) {
-                         ChannelPipeline pipeline = ch.pipeline();
-                         // and then business logic.
-                         pipeline.addLast(new MySQLEncoder());
-                         pipeline.addLast(new MySQLClientHandler());
-                     }
-                 }
-        );
-
-    private static MySQLContainer<?> mysql;
     private static MySQLClientHandler handler;
 
     @BeforeClass
     public static void init() throws InterruptedException, DigestException {
-        mysql = new MySQLContainer<>(MYSQL_80_IMAGE)
-            .withDatabaseName("test")
-            .withUsername(USER_NAME)
-            .withPassword(PASS_WORD);
-        mysql.start();
-        String jdbcUrl = mysql.getJdbcUrl();
+
+        String jdbcUrl = MYSQL.getJdbcUrl();
         URI uri = URI.create(jdbcUrl.substring(5));
 
         // Make a new connection.
-        ChannelFuture f = BOOTSTRAP.connect(uri.getHost(), uri.getPort()).sync();
+        ChannelFuture f = bootstrap.connect(uri.getHost(), uri.getPort()).sync();
         // Get the handler instance to retrieve the answer.
         handler = (MySQLClientHandler)f.channel().pipeline().last();
 
@@ -104,7 +72,7 @@ public class MySQLClientHandlerTest {
     @AfterClass
     public static void destroy() {
         handler.execute(new ComQuit());
-        GROUP.shutdownGracefully();
+        group.shutdownGracefully();
     }
 
     @Test

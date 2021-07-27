@@ -6,28 +6,27 @@ import io.netty.buffer.Unpooled;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class ComQueryTest {
-    ComQuery packet = new ComQuery();
-
-    @Test
-    public void write() {
-        ByteBuf buf = Unpooled.buffer(128);
-        ComQuery packet = new ComQuery();
-        packet.setQuery("select '中国'");
-        packet.write(buf);
-
-        Assert.assertEquals(packet, packet.read(buf));
-    }
+public class ComInitDBTest {
+    ComInitDB packet = new ComInitDB();
 
     @Test
     public void read() {
-        String hexDump = "100000000373656c6563742027e4b8ade59bbd27";
+        String hexDump = "03000000026431";
         ByteBuf buf = Unpooled.wrappedBuffer(
             ByteBufUtil.decodeHexDump(hexDump));
-        ComQuery read = (ComQuery)packet.read(buf);
+        ComInitDB read = (ComInitDB)packet.read(buf);
         System.out.println(read);
         buf = Unpooled.buffer(128);
         read.write(buf);
         Assert.assertEquals(hexDump, ByteBufUtil.hexDump(buf));
+    }
+
+    @Test
+    public void write() {
+        ComInitDB packet = new ComInitDB();
+        packet.setSchema("d1");
+        ByteBuf buf = Unpooled.buffer(128);
+        packet.write(buf);
+        Assert.assertEquals("03000000026431", ByteBufUtil.hexDump(buf));
     }
 }

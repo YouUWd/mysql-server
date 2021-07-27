@@ -57,6 +57,5 @@ public class MySQLClientHandlerFactoryTest extends BaseTest {
         MySQLClientHandler h1 = factory.create(properties);
         PooledObject<MySQLClientHandler> pool = factory.wrap(h1);
         Assert.assertSame(h1, pool.getObject());
-
     }
 }
