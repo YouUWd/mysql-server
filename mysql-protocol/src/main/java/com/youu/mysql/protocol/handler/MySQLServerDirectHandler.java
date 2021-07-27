@@ -13,6 +13,7 @@ import com.youu.mysql.storage.StorageConfig;
 import com.youu.mysql.storage.StorageConfig.HostPort;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler.Sharable;
@@ -79,6 +80,7 @@ public class MySQLServerDirectHandler extends SimpleChannelInboundHandler<MySQLP
         ByteBuf response;
         if (packet instanceof LoginRequest) {
             response = ctx.channel().attr(schemaHandler).get().execute(packet);
+            log.info("login response {} {}", ByteBufUtil.hexDump(response), response);
             //OK
             if (response.getUnsignedByte(4) == 0x00 || response.getUnsignedByte(4) == 0xfe) {
                 ctx.channel().attr(loginRequest).set((LoginRequest)packet);

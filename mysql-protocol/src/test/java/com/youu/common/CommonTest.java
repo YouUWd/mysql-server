@@ -2,6 +2,7 @@ package com.youu.common;
 
 import java.util.Arrays;
 
+import com.youu.mysql.storage.StorageConfig;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import lombok.extern.slf4j.Slf4j;
@@ -60,6 +61,11 @@ public class CommonTest {
         System.out.println(buf);
         System.out.println(buf1);
 
+    }
+
+    @Test
+    public void testStoreConfig() {
+        System.out.println(StorageConfig.getConfig());
     }
 
     void show(ByteBuf buf) {

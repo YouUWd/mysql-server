@@ -6,33 +6,31 @@ import com.google.common.primitives.Bytes;
 import com.mysql.cj.CharsetMapping;
 import com.mysql.cj.protocol.Security;
 import com.mysql.cj.util.StringUtils;
-import com.youu.mysql.protocol.MySQLContainerBaseTest;
 import com.youu.mysql.protocol.pkg.req.ComQuery;
 import com.youu.mysql.protocol.pkg.req.ComQuit;
 import com.youu.mysql.protocol.pkg.req.LoginRequest;
 import com.youu.mysql.protocol.pkg.res.HandshakePacket;
+import com.youu.mysql.protocol.pkg.res.OkPacket;
 import com.youu.mysql.protocol.pkg.res.ResultSetPacket;
+import com.youu.mysql.storage.StorageConfig;
+import com.youu.mysql.storage.impl.H2StorageProvider;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
-import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
-@Slf4j
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class MySQLServerDirectHandlerTest extends MySQLContainerBaseTest {
-    private static final EmbeddedChannel channel = new EmbeddedChannel(new MySQLServerDirectHandler());
+public class MySQLServerHandlerTest {
+    private static final EmbeddedChannel channel = new EmbeddedChannel(new MySQLServerHandler(new H2StorageProvider()));
 
     @BeforeClass
     public static void init() throws DigestException {
-        ByteBuf handshakeData = channel.readOutbound();
-        HandshakePacket handshakePacket = new HandshakePacket();
-        handshakePacket.read(handshakeData);
+        HandshakePacket handshakePacket = channel.readOutbound();
         byte[] authPluginDataPart1 = handshakePacket.getAuthPluginDataPart1();
         byte[] authPluginDataPart2 = handshakePacket.getAuthPluginDataPart2();
         byte[] authPluginDataPart2True = new byte[authPluginDataPart2.length - 1];
@@ -49,20 +47,20 @@ public class MySQLServerDirectHandlerTest extends MySQLContainerBaseTest {
         if ("caching_sha2_password".equals(handshakePacket.getAuthPluginName())) {
             passes = Security
                 .scrambleCachingSha2(
-                    StringUtils.getBytes(PASS_WORD,
+                    StringUtils.getBytes(StorageConfig.getConfig().getUserPass().get(loginRequest.getUsername()),
                         CharsetMapping.getJavaEncodingForCollationIndex(loginRequest.getCharacterSet())),
                     seed);
             loginRequest.setAuthPluginName("caching_sha2_password");
         } else {
-            passes = Security.scramble411(PASS_WORD,
+            passes = Security.scramble411(StorageConfig.getConfig().getUserPass().get(loginRequest.getUsername()),
                 seed,
                 CharsetMapping.getJavaEncodingForCollationIndex(loginRequest.getCharacterSet()));
         }
         loginRequest.setAuthResponse(passes);
         channel.writeInbound(loginRequest);
 
-        ByteBuf response = channel.readOutbound();
-        Assert.assertEquals(0xfe, response.getUnsignedByte(4) | 0xfe);
+        OkPacket response = channel.readOutbound();
+        Assert.assertEquals(0xfe, response.getHeader() | 0xfe);
 
     }
 
@@ -74,13 +72,8 @@ public class MySQLServerDirectHandlerTest extends MySQLContainerBaseTest {
     @Test
     public void test2_channelRead0() {
         channel.writeInbound(new ComQuery("select 1"));
-        ByteBuf response = channel.readOutbound();
-        String s1 = ByteBufUtil.hexDump(response);
-        ResultSetPacket packet = new ResultSetPacket();
-        packet.read(response);
-        ByteBuf buf = Unpooled.buffer(1024);
-        packet.write(buf);
-        Assert.assertEquals(s1, ByteBufUtil.hexDump(buf));
+        ResultSetPacket response = channel.readOutbound();
+        Assert.assertNotNull(response);
     }
 
     @Test
