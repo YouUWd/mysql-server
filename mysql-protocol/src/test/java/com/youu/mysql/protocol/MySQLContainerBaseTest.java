@@ -17,7 +17,7 @@ import org.testcontainers.utility.DockerImageName;
  * @Description
  * @Date 2021/7/26
  */
-public class BaseTest {
+public class MySQLContainerBaseTest {
     private static final DockerImageName MYSQL_80_IMAGE = DockerImageName.parse("mysql:8.0.25");
 
     protected static final String USER_NAME = "root";

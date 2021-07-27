@@ -1,5 +1,6 @@
 package com.youu.mysql.protocol.util;
 
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -9,7 +10,7 @@ import java.util.regex.Pattern;
  * @Date 2021/7/21
  */
 public class MySQLHintUtil {
-    public static Integer getIndex(String sql) {
+    public static Optional<Integer> getIndex(String sql) {
         int start = sql.indexOf("/*+");
         int end = sql.indexOf("*/");
         if ((start | end) > 0) {
@@ -19,9 +20,9 @@ public class MySQLHintUtil {
             Matcher m = p.matcher(hint);
 
             if (m.find() && m.groupCount() > 3) {
-                return Integer.valueOf(m.group(3));
+                return Optional.of(Integer.valueOf(m.group(3)));
             }
         }
-        return null;
+        return Optional.empty();
     }
 }

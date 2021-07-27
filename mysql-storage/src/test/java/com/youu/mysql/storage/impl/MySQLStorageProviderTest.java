@@ -3,33 +3,25 @@ package com.youu.mysql.storage.impl;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import com.youu.mysql.storage.MySQLStoreBaseTest;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.utility.DockerImageName;
 
-public class MySQLStorageProviderTest {
+public class MySQLStorageProviderTest extends MySQLStoreBaseTest {
 
-    private static final DockerImageName MYSQL_80_IMAGE = DockerImageName.parse("mysql:8.0.25");
     private static MySQLStorageProvider provider;
-
-    private static final String DB = "db1", USERNAME = "root", PASSWORD = "pass";
 
     @BeforeClass
     public static void init() {
-        MySQLContainer mysql = new MySQLContainer<>(MYSQL_80_IMAGE)
-            .withDatabaseName(DB)
-            .withUsername(USERNAME)
-            .withPassword(PASSWORD);
-        mysql.start();
-        provider = new MySQLStorageProvider(mysql.getJdbcUrl(), USERNAME, PASSWORD);
+
+        provider = new MySQLStorageProvider(MYSQL.getJdbcUrl(), USER_NAME, PASS_WORD);
     }
 
     @Before
     public void initDB() throws SQLException {
-        provider.init(DB);
+        provider.init(DATABASE);
     }
 
     @Test

@@ -7,7 +7,7 @@ import com.google.common.primitives.Bytes;
 import com.mysql.cj.CharsetMapping;
 import com.mysql.cj.protocol.Security;
 import com.mysql.cj.util.StringUtils;
-import com.youu.mysql.protocol.BaseTest;
+import com.youu.mysql.protocol.MySQLContainerBaseTest;
 import com.youu.mysql.protocol.pkg.req.ComQuery;
 import com.youu.mysql.protocol.pkg.req.ComQuit;
 import com.youu.mysql.protocol.pkg.req.LoginRequest;
@@ -21,7 +21,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 @Slf4j
-public class MySQLServerDirectHandlerTest extends BaseTest {
+public class MySQLServerDirectHandlerTest extends MySQLContainerBaseTest {
 
     /**
      * MySQLContainer 默认 caching_sha2_password，目前暂时无法处理

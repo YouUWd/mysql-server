@@ -1,5 +1,7 @@
 package com.youu.mysql.protocol.handler;
 
+import java.util.Optional;
+
 import com.youu.mysql.protocol.codec.MySQLEncoder;
 import com.youu.mysql.protocol.common.StorageProperties;
 import com.youu.mysql.protocol.pkg.MySQLPacket;
@@ -84,8 +86,9 @@ public class MySQLServerDirectHandler extends SimpleChannelInboundHandler<MySQLP
         } else {
             if (packet instanceof ComQuery) {
                 String query = ((ComQuery)packet).getQuery();
-                Integer storeIndex = MySQLHintUtil.getIndex(query);
-                if (storeIndex != null) {
+                Optional<Integer> optional = MySQLHintUtil.getIndex(query);
+                if (optional.isPresent()) {
+                    int storeIndex = optional.get();
                     int size = StorageConfig.getConfig().getStorages().size();
                     if (storeIndex < 0 || storeIndex > size) {
                         ErrorPacket error = new ErrorPacket();

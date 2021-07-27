@@ -2,7 +2,7 @@ package com.youu.mysql.protocol.handler;
 
 import java.net.URI;
 
-import com.youu.mysql.protocol.BaseTest;
+import com.youu.mysql.protocol.MySQLContainerBaseTest;
 import com.youu.mysql.protocol.common.StorageProperties;
 import com.youu.mysql.protocol.pkg.req.ComQuery;
 import com.youu.mysql.protocol.pkg.req.ComQuit;
@@ -15,7 +15,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class MySQLClientHandlerFactoryTest extends BaseTest {
+public class MySQLClientHandlerFactoryTest extends MySQLContainerBaseTest {
 
     private static MySQLClientHandlerFactory factory = new MySQLClientHandlerFactory();
     private static StorageProperties properties;
