@@ -9,7 +9,7 @@ import com.mysql.cj.result.Field;
 import com.youu.mysql.common.constant.MySQLColumnType;
 import com.youu.mysql.common.util.ColumnTypeConverter;
 import com.youu.mysql.common.util.ConnectionId;
-import com.youu.mysql.protocol.net.ConnectionAttr;
+import com.youu.mysql.protocol.common.ConnectionAttr;
 import com.youu.mysql.protocol.pkg.req.ComFieldList;
 import com.youu.mysql.protocol.pkg.req.ComInitDB;
 import com.youu.mysql.protocol.pkg.req.ComProcessKill;

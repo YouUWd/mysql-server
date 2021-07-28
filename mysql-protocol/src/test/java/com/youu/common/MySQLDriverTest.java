@@ -25,7 +25,7 @@ import org.junit.Test;
  * @Description
  * @Date 2021/7/16
  */
-public class JDBCTest {
+public class MySQLDriverTest {
     @Test
     public void testNativeCapabilities() {
         String handshake

@@ -7,7 +7,7 @@ import com.google.common.primitives.Bytes;
 import com.mysql.cj.CharsetMapping;
 import com.mysql.cj.protocol.Security;
 import com.mysql.cj.util.StringUtils;
-import com.youu.mysql.protocol.MySQLContainerBaseTest;
+import com.youu.mysql.protocol.base.MySQLContainerBaseTest;
 import com.youu.mysql.protocol.pkg.req.ComQuery;
 import com.youu.mysql.protocol.pkg.req.ComQuit;
 import com.youu.mysql.protocol.pkg.req.LoginRequest;

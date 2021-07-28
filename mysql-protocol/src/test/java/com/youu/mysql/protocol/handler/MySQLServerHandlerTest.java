@@ -18,6 +18,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -64,6 +65,11 @@ public class MySQLServerHandlerTest {
 
     }
 
+    @AfterClass
+    public static void destroy() {
+        Assert.assertEquals(false, channel.isActive());
+    }
+
     @Test
     public void test1_channelActive() {
         Assert.assertEquals(true, channel.isActive());
@@ -73,6 +79,17 @@ public class MySQLServerHandlerTest {
     public void test2_channelRead0() {
         channel.writeInbound(new ComQuery("select 1"));
         ResultSetPacket response = channel.readOutbound();
+        Assert.assertNotNull(response);
+
+        channel.writeInbound(new ComQuery("create schema test"));
+
+        Assert.assertSame(OkPacket.class, channel.readOutbound().getClass());
+
+        channel.writeInbound(new ComQuery("use test"));
+        Assert.assertSame(OkPacket.class, channel.readOutbound().getClass());
+
+        channel.writeInbound(new ComQuery("select @@version_comment"));
+        response = channel.readOutbound();
         Assert.assertNotNull(response);
     }
 
@@ -84,8 +101,6 @@ public class MySQLServerHandlerTest {
     @Test
     public void test4_channelInactive() {
         channel.writeInbound(new ComQuit());
-        channel.close();
-        Assert.assertEquals(false, channel.isActive());
     }
 
 }

@@ -2,7 +2,7 @@ package com.youu.mysql.protocol.handler;
 
 import java.net.URI;
 
-import com.youu.mysql.protocol.MySQLContainerBaseTest;
+import com.youu.mysql.protocol.base.MySQLContainerBaseTest;
 import com.youu.mysql.protocol.common.StorageProperties;
 import com.youu.mysql.protocol.pkg.req.ComQuery;
 import com.youu.mysql.protocol.pkg.req.ComQuit;

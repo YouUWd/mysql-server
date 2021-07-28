@@ -1,4 +1,4 @@
-package com.youu.mysql.protocol.net;
+package com.youu.mysql.protocol.common;
 
 import lombok.Builder;
 import lombok.Data;

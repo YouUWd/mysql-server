@@ -1,4 +1,4 @@
-package com.youu.mysql.protocol;
+package com.youu.mysql.protocol.base;
 
 import com.youu.mysql.protocol.codec.MySQLEncoder;
 import com.youu.mysql.protocol.handler.MySQLClientHandler;

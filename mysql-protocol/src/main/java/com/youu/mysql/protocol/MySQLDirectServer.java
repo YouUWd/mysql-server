@@ -23,8 +23,8 @@ import io.netty.handler.ssl.util.SelfSignedCertificate;
  * @Date 2021/7/15
  */
 public class MySQLDirectServer {
-    private static final boolean SSL = System.getProperty("ssl") != null;
-    private static final int PORT = Integer.parseInt(System.getProperty("port", "3307"));
+    public static final boolean SSL = System.getProperty("ssl") != null;
+    public static final int PORT = Integer.parseInt(System.getProperty("port", "3307"));
 
     public static void main(String[] args) throws Exception {
         // Configure SSL.
