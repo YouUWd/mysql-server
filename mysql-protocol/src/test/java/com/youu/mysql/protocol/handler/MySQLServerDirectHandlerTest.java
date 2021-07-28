@@ -1,5 +1,6 @@
 package com.youu.mysql.protocol.handler;
 
+import java.net.URI;
 import java.security.DigestException;
 
 import com.google.common.primitives.Bytes;
@@ -12,6 +13,8 @@ import com.youu.mysql.protocol.pkg.req.ComQuit;
 import com.youu.mysql.protocol.pkg.req.LoginRequest;
 import com.youu.mysql.protocol.pkg.res.HandshakePacket;
 import com.youu.mysql.protocol.pkg.res.ResultSetPacket;
+import com.youu.mysql.storage.StorageConfig;
+import com.youu.mysql.storage.StorageConfig.HostPort;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
@@ -30,6 +33,9 @@ public class MySQLServerDirectHandlerTest extends MySQLContainerBaseTest {
 
     @BeforeClass
     public static void init() throws DigestException {
+        String jdbcUrl = MYSQL.getJdbcUrl();
+        URI uri = URI.create(jdbcUrl.substring(5));
+        StorageConfig.getConfig().setSchema(new HostPort(uri.getHost(), uri.getPort()));
         ByteBuf handshakeData = channel.readOutbound();
         HandshakePacket handshakePacket = new HandshakePacket();
         handshakePacket.read(handshakeData);
