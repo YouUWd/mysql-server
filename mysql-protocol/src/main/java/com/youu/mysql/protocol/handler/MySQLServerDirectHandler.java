@@ -56,14 +56,13 @@ public class MySQLServerDirectHandler extends SimpleChannelInboundHandler<MySQLP
     private final AttributeKey<MySQLClientHandler> schemaHandler = AttributeKey.valueOf("schema_handler");
     private final AttributeKey<LoginRequest> loginRequest = AttributeKey.valueOf("login_request");
 
-    private final HostPort schemaStore = StorageConfig.getConfig().getSchema();
-
     private final KeyedObjectPool<StorageProperties, MySQLClientHandler> handlerPool = new GenericKeyedObjectPool<>(
         new MySQLClientHandlerFactory());
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws InterruptedException {
-        log.info("{} channelActive {}", group, bootstrap);
+        HostPort schemaStore = StorageConfig.getConfig().getSchema();
+        log.info("{} {} channelActive {}", schemaStore, group, bootstrap);
         // Make a new connection.
         ChannelFuture f = bootstrap.connect(schemaStore.getHost(), schemaStore.getPort()).sync();
         // Get the handler instance to retrieve the answer.

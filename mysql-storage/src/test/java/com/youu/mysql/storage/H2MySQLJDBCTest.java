@@ -195,7 +195,7 @@ public class H2MySQLJDBCTest {
     @Ignore
     @Test
     public void testMySQL1() throws SQLException {
-        String jdbcUrl = "jdbc:mysql://localhost:3306?useSSL=false";
+        String jdbcUrl = "jdbc:mysql://127.0.0.1:3306?useSSL=false&allowPublicKeyRetrieval=true";
         Properties info = new Properties();
         info.put("user", "root");
         info.put("password", "pass");

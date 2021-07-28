@@ -19,8 +19,11 @@ import io.netty.channel.ChannelFuture;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class MySQLClientHandlerTest extends MySQLContainerBaseTest {
 
     private static MySQLClientHandler handler;
@@ -75,13 +78,13 @@ public class MySQLClientHandlerTest extends MySQLContainerBaseTest {
     }
 
     @Test
-    public void handshake() {
+    public void test1_handshake() {
         //handshake only get once
         Assert.assertNull(handler.handshake());
     }
 
     @Test
-    public void execute() {
+    public void test2_execute() {
         ComQuery query = new ComQuery();
         query.setQuery("select 1");
         Assert.assertEquals(
