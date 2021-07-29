@@ -13,7 +13,6 @@ import com.youu.mysql.storage.StorageConfig;
 import com.youu.mysql.storage.StorageConfig.HostPort;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler.Sharable;
@@ -65,25 +64,17 @@ public class MySQLServerDirectHandler extends SimpleChannelInboundHandler<MySQLP
         log.info("{} {} channelActive {}", schemaStore, group, bootstrap);
         // Make a new connection.
         ChannelFuture f = bootstrap.connect(schemaStore.getHost(), schemaStore.getPort()).sync();
-        // Get the handler instance to retrieve the answer.
         MySQLClientHandler handler = (MySQLClientHandler)f.channel().pipeline().last();
+        handler.setUserCtx(ctx);
         ctx.channel().attr(schemaHandler).set(handler);
-        ByteBuf handshake = handler.handshake();
-        log.info("handshake {}", handshake);
-        ctx.writeAndFlush(handshake);
     }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, MySQLPacket packet) throws Exception {
         log.info("{} channelRead {}", group, packet);
-        ByteBuf response;
         if (packet instanceof LoginRequest) {
-            response = ctx.channel().attr(schemaHandler).get().execute(packet);
-            log.info("login response {} {}", ByteBufUtil.hexDump(response), response);
-            //OK
-            if (response.getUnsignedByte(4) == 0x00 || response.getUnsignedByte(4) == 0xfe) {
-                ctx.channel().attr(loginRequest).set((LoginRequest)packet);
-            }
+            ctx.channel().attr(schemaHandler).get().execute(packet);
+            ctx.channel().attr(loginRequest).set((LoginRequest)packet);
         } else {
             if (packet instanceof ComQuery) {
                 String query = ((ComQuery)packet).getQuery();
@@ -96,25 +87,25 @@ public class MySQLServerDirectHandler extends SimpleChannelInboundHandler<MySQLP
                         error.generate("HINT of USE_STORE should between [1," + size + "]");
                         ByteBuf buffer = Unpooled.buffer(128);
                         error.write(buffer);
-                        response = buffer;
+                        ctx.writeAndFlush(buffer);
                     } else {
                         StorageProperties properties = new StorageProperties(
                             StorageConfig.getConfig().getStore(storeIndex), bootstrap,
                             ctx.channel().attr(loginRequest).get());
                         MySQLClientHandler handler = handlerPool.borrowObject(properties);
+                        handler.setUserCtx(ctx);
                         log.info("handler {}", handler);
-                        response = handler.execute(packet);
+                        handler.execute(packet);
                         handlerPool.returnObject(properties, handler);
                     }
                 } else {
-                    response = ctx.channel().attr(schemaHandler).get().execute(packet);
+                    MySQLClientHandler handler = ctx.channel().attr(schemaHandler).get();
+                    handler.execute(packet);
                 }
             } else {
-                response = ctx.channel().attr(schemaHandler).get().execute(packet);
+                ctx.channel().attr(schemaHandler).get().execute(packet);
             }
         }
-        ctx.writeAndFlush(response);
-
     }
 
     @Override

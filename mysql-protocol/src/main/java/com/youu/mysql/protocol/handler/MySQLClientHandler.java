@@ -1,5 +1,8 @@
 package com.youu.mysql.protocol.handler;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -18,17 +21,27 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class MySQLClientHandler extends ChannelInboundHandlerAdapter {
-    private ChannelHandlerContext ctx;
+    private ChannelHandlerContext userCtx;
+    private ChannelHandlerContext storeCtx;
 
-    final BlockingQueue<ByteBuf> answer = new LinkedBlockingQueue<>(1);
+    // init packet is handshake packet
+    private boolean initStore = false;
+    private final List<ByteBuf> body = new ArrayList<>(8);
+    private final BlockingQueue<ByteBuf> responseQueue = new LinkedBlockingQueue<>(1);
 
-    public ByteBuf handshake() {
+    /**
+     * 1、handshake
+     * 2、login response
+     *
+     * @return mysql store response
+     */
+    public ByteBuf response() {
         //HandShakeResponse without request
         ByteBuf result;
         boolean interrupted = false;
         for (; ; ) {
             try {
-                result = answer.poll(3, TimeUnit.SECONDS);
+                result = responseQueue.take();
                 break;
             } catch (InterruptedException ignore) {
                 interrupted = true;
@@ -40,42 +53,46 @@ public class MySQLClientHandler extends ChannelInboundHandlerAdapter {
         return result;
     }
 
-    public ByteBuf execute(MySQLPacket packet) {
-        //HandShakeResponse without packet
-        if (packet != null) {
-            ctx.writeAndFlush(packet);
-        }
-
-        ByteBuf result;
-        boolean interrupted = false;
-        for (; ; ) {
-            try {
-                result = answer.take();
-                break;
-            } catch (InterruptedException ignore) {
-                interrupted = true;
-            }
-        }
-        if (interrupted) {
-            Thread.currentThread().interrupt();
-        }
-        return result;
+    public void execute(MySQLPacket packet) {
+        storeCtx.writeAndFlush(packet);
     }
 
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) {
-        this.ctx = ctx;
+        this.storeCtx = ctx;
+
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        answer.add(((ByteBuf)msg));
+        if (initStore) {
+            body.add((ByteBuf)msg);
+        } else {
+            userCtx.write(msg);
+        }
+    }
+
+    @Override
+    public void channelReadComplete(ChannelHandlerContext ctx) {
+        if (initStore) {
+            Optional<ByteBuf> optional = body.stream().reduce(Unpooled::wrappedBuffer);
+            optional.ifPresent(byteBuf -> responseQueue.add(byteBuf));
+        } else {
+            userCtx.flush();
+        }
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
         log.info("channelInactive");
-        answer.add(Unpooled.EMPTY_BUFFER);
+    }
+
+    public void setInitStore(boolean initStore) {
+        this.initStore = initStore;
+    }
+
+    public void setUserCtx(ChannelHandlerContext userCtx) {
+        this.userCtx = userCtx;
     }
 
 }

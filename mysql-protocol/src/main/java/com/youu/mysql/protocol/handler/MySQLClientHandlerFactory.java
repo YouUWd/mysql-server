@@ -28,8 +28,8 @@ public class MySQLClientHandlerFactory extends BaseKeyedPooledObjectFactory<Stor
             .sync();
         // Get the handler instance to retrieve the answer.
         MySQLClientHandler handler = (MySQLClientHandler)f.channel().pipeline().last();
-
-        ByteBuf handshakeData = handler.handshake();
+        handler.setInitStore(true);
+        ByteBuf handshakeData = handler.response();
         HandshakePacket handshakePacket = new HandshakePacket();
         handshakePacket.read(handshakeData);
         byte[] authPluginDataPart1 = handshakePacket.getAuthPluginDataPart1();
@@ -56,6 +56,8 @@ public class MySQLClientHandlerFactory extends BaseKeyedPooledObjectFactory<Stor
         loginRequest.setAuthResponse(passes);
 
         handler.execute(loginRequest);
+        handler.response();
+        handler.setInitStore(false);
         return handler;
     }
 

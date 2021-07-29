@@ -1,6 +1,9 @@
 package com.youu.common;
 
 import java.util.Arrays;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 
 import com.youu.mysql.storage.StorageConfig;
 import io.netty.buffer.ByteBuf;
@@ -66,6 +69,31 @@ public class CommonTest {
     @Test
     public void testStoreConfig() {
         System.out.println(StorageConfig.getConfig());
+    }
+
+    @Test
+    public void testBlockingQueue1() throws InterruptedException {
+        BlockingQueue queue = new LinkedBlockingDeque(1);
+        queue.put(1);
+        new Thread(() -> {
+            try {
+                TimeUnit.SECONDS.sleep(1);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println(queue.poll());
+        }).start();
+        queue.put(2);
+
+        System.out.println(queue);
+    }
+
+    @Test
+    public void testBlockingQueue2() {
+        BlockingQueue queue = new LinkedBlockingDeque(1);
+        System.out.println(queue.poll());
+        //System.out.println(queue.take());
+        System.out.println(queue);
     }
 
     void show(ByteBuf buf) {

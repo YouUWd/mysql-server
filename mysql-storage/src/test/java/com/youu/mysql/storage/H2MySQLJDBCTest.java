@@ -187,6 +187,28 @@ public class H2MySQLJDBCTest {
         System.out.println(de);
     }
 
+    @Ignore
+    @Test
+    public void testMySQL() throws SQLException {
+        String jdbcUrl = "jdbc:mysql://127.0.0.1:3307?useSSL=false";
+        Properties info = new Properties();
+        info.put("user", "root");
+        info.put("password", "pass");
+        ConnectionUrl conStr = ConnectionUrl.getConnectionUrlInstance(jdbcUrl, info);
+        JdbcPropertySetImpl propertySet = new JdbcPropertySetImpl();
+        propertySet.initializeProperties(info);
+
+        JdbcConnection instance = ConnectionImpl.getInstance(conStr.getMainHost());
+        Statement statement = instance.createStatement();
+        ResultSet resultSet = statement.executeQuery("select 1");
+        while (resultSet.next()) {
+            System.out.println(resultSet.getInt(1));
+        }
+        resultSet.close();
+        instance.close();
+
+    }
+
     /**
      * 以 --default-authentication-plugin=caching_sha2_password 方式启动mysql(8.0后默认)
      *
