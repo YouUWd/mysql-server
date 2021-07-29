@@ -40,7 +40,6 @@ public class MySQLDirectServer {
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup();
 
-        final MySQLServerDirectHandler serverHandler = new MySQLServerDirectHandler();
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
@@ -56,7 +55,7 @@ public class MySQLDirectServer {
                         }
                         //p.addLast(new LoggingHandler(LogLevel.INFO));
                         p.addLast(new MySQLDecoder());
-                        p.addLast(serverHandler);
+                        p.addLast(new MySQLServerDirectHandler());
                     }
                 });
 

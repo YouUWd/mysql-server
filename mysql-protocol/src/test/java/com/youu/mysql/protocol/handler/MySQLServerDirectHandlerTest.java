@@ -24,6 +24,7 @@ import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
+import org.testcontainers.containers.MySQLContainer;
 
 @Slf4j
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
@@ -35,6 +36,19 @@ public class MySQLServerDirectHandlerTest extends MySQLContainerBaseTest {
         String jdbcUrl = MYSQL.getJdbcUrl();
         URI uri = URI.create(jdbcUrl.substring(5));
         StorageConfig.getConfig().setSchema(new HostPort(uri.getHost(), uri.getPort()));
+
+        MySQLContainer store1 = new MySQLContainer<>(MYSQL_80_IMAGE)
+            .withDatabaseName("test")
+            .withUsername(USER_NAME)
+            .withPassword(PASS_WORD);
+        store1.start();
+
+        jdbcUrl = store1.getJdbcUrl();
+        uri = URI.create(jdbcUrl.substring(5));
+        StorageConfig.getConfig().getStorages().clear();
+        StorageConfig.getConfig().getStorages().add(new HostPort(uri.getHost(), uri.getPort()));
+        StorageConfig.getConfig().getStorages().add(new HostPort("127.0.0.1", 10010));
+
         channel = new EmbeddedChannel(new MySQLServerDirectHandler());
         ByteBuf handshakeData = channel.readOutbound();
         HandshakePacket handshakePacket = new HandshakePacket();
@@ -66,7 +80,6 @@ public class MySQLServerDirectHandlerTest extends MySQLContainerBaseTest {
         }
         loginRequest.setAuthResponse(passes);
         channel.writeInbound(loginRequest);
-
         ByteBuf response = channel.readOutbound();
         if (response.getUnsignedByte(4) != 0x01) { Assert.assertEquals(0xfe, response.getUnsignedByte(4) | 0xfe); }
 
@@ -83,6 +96,31 @@ public class MySQLServerDirectHandlerTest extends MySQLContainerBaseTest {
         ByteBuf response = channel.readOutbound();
         Assert.assertEquals(
             "010000010117000002036465660000000131000c3f000100000008810000000002000003013107000004fe000002000000",
+            ByteBufUtil.hexDump(response));
+    }
+
+    @Test
+    public void test2_channelRead1() {
+        channel.writeInbound(new ComQuery("/*+USE_STORE(1)*/select 1"));
+        ByteBuf response = channel.readOutbound();
+        Assert.assertEquals(
+            "010000010117000002036465660000000131000c3f000100000008810000000002000003013107000004fe000002000000",
+            ByteBufUtil.hexDump(response));
+    }
+
+    @Test
+    public void test2_channelRead2() {
+        channel.writeInbound(new ComQuery("/*+USE_STORE(2)*/select 1"));
+        ByteBuf response = channel.readOutbound();
+        Assert.assertEquals(0xff, response.getUnsignedByte(4));
+    }
+
+    @Test
+    public void test2_channelRead3() {
+        channel.writeInbound(new ComQuery("/*+USE_STORE(3)*/select 1"));
+        ByteBuf response = channel.readOutbound();
+        Assert.assertEquals(
+            "2f000001ffe80323313053303048494e54206f66205553455f53544f52452073686f756c64206265747765656e205b312c325d",
             ByteBufUtil.hexDump(response));
     }
 

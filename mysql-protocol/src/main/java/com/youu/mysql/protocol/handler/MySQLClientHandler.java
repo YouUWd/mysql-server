@@ -1,14 +1,26 @@
 package com.youu.mysql.protocol.handler;
 
+import java.security.DigestException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
+import com.google.common.primitives.Bytes;
+import com.mysql.cj.CharsetMapping;
+import com.mysql.cj.protocol.Security;
+import com.mysql.cj.util.StringUtils;
+import com.youu.mysql.protocol.common.ChannelAttributeKey;
 import com.youu.mysql.protocol.pkg.MySQLPacket;
+import com.youu.mysql.protocol.pkg.req.LoginRequest;
+import com.youu.mysql.protocol.pkg.res.HandshakePacket;
+import com.youu.mysql.storage.StorageConfig;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -23,11 +35,18 @@ import lombok.extern.slf4j.Slf4j;
 public class MySQLClientHandler extends ChannelInboundHandlerAdapter {
     private ChannelHandlerContext userCtx;
     private ChannelHandlerContext storeCtx;
+    private CyclicBarrier barrier;
 
     // init packet is handshake packet
-    private boolean initStore = false;
     private final List<ByteBuf> body = new ArrayList<>(8);
     private final BlockingQueue<ByteBuf> responseQueue = new LinkedBlockingQueue<>(1);
+
+    private AtomicLong reqCount = new AtomicLong();
+
+    public MySQLClientHandler(ChannelHandlerContext userCtx, CyclicBarrier barrier) {
+        this.userCtx = userCtx;
+        this.barrier = barrier;
+    }
 
     /**
      * 1、handshake
@@ -53,19 +72,51 @@ public class MySQLClientHandler extends ChannelInboundHandlerAdapter {
         return result;
     }
 
+    public void login() throws DigestException {
+        ByteBuf handshakeData = response();
+        HandshakePacket handshakePacket = new HandshakePacket();
+        handshakePacket.read(handshakeData);
+        byte[] authPluginDataPart1 = handshakePacket.getAuthPluginDataPart1();
+        byte[] authPluginDataPart2 = handshakePacket.getAuthPluginDataPart2();
+        byte[] authPluginDataPart2True = new byte[authPluginDataPart2.length - 1];
+        System.arraycopy(authPluginDataPart2, 0, authPluginDataPart2True, 0, authPluginDataPart2True.length);
+        byte[] seed = Bytes.concat(authPluginDataPart1, authPluginDataPart2True);
+
+        LoginRequest loginRequest = userCtx.channel().attr(ChannelAttributeKey.LOGIN_REQUEST).get();
+        byte[] passes;
+        if ("caching_sha2_password".equals(handshakePacket.getAuthPluginName())) {
+            passes = Security
+                .scrambleCachingSha2(
+                    StringUtils.getBytes(StorageConfig.getConfig().getUserPass().get(loginRequest.getUsername()),
+                        CharsetMapping.getJavaEncodingForCollationIndex(loginRequest.getCharacterSet())),
+                    seed);
+            loginRequest.setAuthPluginName("caching_sha2_password");
+        } else {
+            passes = Security.scramble411(StorageConfig.getConfig().getUserPass().get(loginRequest.getUsername()),
+                seed,
+                CharsetMapping.getJavaEncodingForCollationIndex(loginRequest.getCharacterSet()));
+        }
+
+        loginRequest.setAuthResponse(passes);
+
+        storeCtx.writeAndFlush(loginRequest);
+        ByteBuf loginResponse = response();
+        log.info("loginResponse {}", ByteBufUtil.hexDump(loginResponse));
+    }
+
     public void execute(MySQLPacket packet) {
+        log.info("execute {}", packet);
         storeCtx.writeAndFlush(packet);
     }
 
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) {
         this.storeCtx = ctx;
-
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        if (initStore) {
+        if (userCtx.channel().attr(ChannelAttributeKey.STORE_INDEX).get() != null && reqCount.get() < 2) {
             body.add((ByteBuf)msg);
         } else {
             userCtx.write(msg);
@@ -73,12 +124,14 @@ public class MySQLClientHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void channelReadComplete(ChannelHandlerContext ctx) {
-        if (initStore) {
+    public void channelReadComplete(ChannelHandlerContext ctx) throws BrokenBarrierException, InterruptedException {
+        long count = reqCount.getAndIncrement();
+        if (userCtx.channel().attr(ChannelAttributeKey.STORE_INDEX).get() != null && count < 2) {
             Optional<ByteBuf> optional = body.stream().reduce(Unpooled::wrappedBuffer);
             optional.ifPresent(byteBuf -> responseQueue.add(byteBuf));
         } else {
             userCtx.flush();
+            barrier.await();
         }
     }
 
@@ -86,13 +139,4 @@ public class MySQLClientHandler extends ChannelInboundHandlerAdapter {
     public void channelInactive(ChannelHandlerContext ctx) {
         log.info("channelInactive");
     }
-
-    public void setInitStore(boolean initStore) {
-        this.initStore = initStore;
-    }
-
-    public void setUserCtx(ChannelHandlerContext userCtx) {
-        this.userCtx = userCtx;
-    }
-
 }

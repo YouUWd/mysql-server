@@ -1,9 +1,11 @@
 package com.youu.mysql.protocol.handler;
 
 import java.util.Optional;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
 
 import com.youu.mysql.protocol.codec.MySQLEncoder;
-import com.youu.mysql.protocol.common.StorageProperties;
+import com.youu.mysql.protocol.common.ChannelAttributeKey;
 import com.youu.mysql.protocol.pkg.MySQLPacket;
 import com.youu.mysql.protocol.pkg.req.ComQuery;
 import com.youu.mysql.protocol.pkg.req.LoginRequest;
@@ -24,7 +26,6 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.util.AttributeKey;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.pool2.KeyedObjectPool;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPool;
@@ -38,43 +39,49 @@ import org.apache.commons.pool2.impl.GenericKeyedObjectPool;
 @Sharable
 public class MySQLServerDirectHandler extends SimpleChannelInboundHandler<MySQLPacket> {
 
-    private final EventLoopGroup group = new NioEventLoopGroup();
+    private static final EventLoopGroup GROUP = new NioEventLoopGroup();
+    private CyclicBarrier barrier = new CyclicBarrier(2);
 
-    private final Bootstrap bootstrap = new Bootstrap().group(group)
-        .channel(NioSocketChannel.class)
-        .handler(new ChannelInitializer<SocketChannel>() {
-                     @Override
-                     protected void initChannel(SocketChannel ch) {
-                         ChannelPipeline pipeline = ch.pipeline();
-                         // and then business logic.
-                         pipeline.addLast(new MySQLEncoder());
-                         pipeline.addLast(new MySQLClientHandler());
-                     }
-                 }
-        );
-    private final AttributeKey<MySQLClientHandler> schemaHandler = AttributeKey.valueOf("schema_handler");
-    private final AttributeKey<LoginRequest> loginRequest = AttributeKey.valueOf("login_request");
+    private Bootstrap bootstrap;
 
-    private final KeyedObjectPool<StorageProperties, MySQLClientHandler> handlerPool = new GenericKeyedObjectPool<>(
-        new MySQLClientHandlerFactory());
+    private MySQLClientHandler schemaHandler;
+
+    private KeyedObjectPool<Integer, MySQLClientHandler> handlerPool;
 
     @Override
-    public void channelActive(ChannelHandlerContext ctx) throws InterruptedException {
+    public void channelRegistered(ChannelHandlerContext ctx) {
+        bootstrap = new Bootstrap().group(GROUP)
+            .channel(NioSocketChannel.class)
+            .handler(new ChannelInitializer<SocketChannel>() {
+                         @Override
+                         protected void initChannel(SocketChannel ch) {
+                             ChannelPipeline pipeline = ch.pipeline();
+                             // and then business logic.
+                             pipeline.addLast(new MySQLEncoder());
+                             pipeline.addLast(new MySQLClientHandler(ctx, barrier));
+                         }
+                     }
+            );
+        handlerPool = new GenericKeyedObjectPool(new MySQLClientHandlerFactory(bootstrap, barrier));
+    }
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws InterruptedException, BrokenBarrierException {
         HostPort schemaStore = StorageConfig.getConfig().getSchema();
-        log.info("{} {} channelActive {}", schemaStore, group, bootstrap);
+        log.info("{} {} channelActive {}", schemaStore, GROUP, bootstrap);
         // Make a new connection.
         ChannelFuture f = bootstrap.connect(schemaStore.getHost(), schemaStore.getPort()).sync();
-        MySQLClientHandler handler = (MySQLClientHandler)f.channel().pipeline().last();
-        handler.setUserCtx(ctx);
-        ctx.channel().attr(schemaHandler).set(handler);
+        schemaHandler = (MySQLClientHandler)f.channel().pipeline().last();
+        barrier.await();
     }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, MySQLPacket packet) throws Exception {
-        log.info("{} channelRead {}", group, packet);
+        log.info("{} channelRead {}", GROUP, packet);
+        ctx.channel().attr(ChannelAttributeKey.STORE_INDEX).set(null);
         if (packet instanceof LoginRequest) {
-            ctx.channel().attr(schemaHandler).get().execute(packet);
-            ctx.channel().attr(loginRequest).set((LoginRequest)packet);
+            schemaHandler.execute(packet);
+            ctx.channel().attr(ChannelAttributeKey.LOGIN_REQUEST).set((LoginRequest)packet);
         } else {
             if (packet instanceof ComQuery) {
                 String query = ((ComQuery)packet).getQuery();
@@ -88,24 +95,32 @@ public class MySQLServerDirectHandler extends SimpleChannelInboundHandler<MySQLP
                         ByteBuf buffer = Unpooled.buffer(128);
                         error.write(buffer);
                         ctx.writeAndFlush(buffer);
+                        return;
                     } else {
-                        StorageProperties properties = new StorageProperties(
-                            StorageConfig.getConfig().getStore(storeIndex), bootstrap,
-                            ctx.channel().attr(loginRequest).get());
-                        MySQLClientHandler handler = handlerPool.borrowObject(properties);
-                        handler.setUserCtx(ctx);
-                        log.info("handler {}", handler);
-                        handler.execute(packet);
-                        handlerPool.returnObject(properties, handler);
+                        ctx.channel().attr(ChannelAttributeKey.STORE_INDEX).set(storeIndex);
+                        try {
+                            MySQLClientHandler handler = handlerPool.borrowObject(storeIndex);
+                            log.info("handler{}, {}", storeIndex, handler);
+                            handler.execute(packet);
+                            handlerPool.returnObject(storeIndex, handler);
+                        } catch (Exception e) {
+                            log.error("exec in store fail...", e);
+                            ErrorPacket error = new ErrorPacket();
+                            error.generate(e.getMessage());
+                            ByteBuf buffer = Unpooled.buffer(1024);
+                            error.write(buffer);
+                            ctx.writeAndFlush(buffer);
+                            return;
+                        }
                     }
                 } else {
-                    MySQLClientHandler handler = ctx.channel().attr(schemaHandler).get();
-                    handler.execute(packet);
+                    schemaHandler.execute(packet);
                 }
             } else {
-                ctx.channel().attr(schemaHandler).get().execute(packet);
+                schemaHandler.execute(packet);
             }
         }
+        barrier.await();
     }
 
     @Override
