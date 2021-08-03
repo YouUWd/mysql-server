@@ -139,4 +139,9 @@ public class MySQLClientHandler extends ChannelInboundHandlerAdapter {
     public void channelInactive(ChannelHandlerContext ctx) {
         log.info("channelInactive");
     }
+
+    public void stop() {
+        log.info("stop");
+        storeCtx.close();
+    }
 }

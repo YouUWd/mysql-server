@@ -1,7 +1,9 @@
 package com.youu.mysql.protocol;
 
 import com.youu.mysql.protocol.codec.MySQLDecoder;
-import com.youu.mysql.protocol.handler.MySQLServerDirectHandler;
+import com.youu.mysql.protocol.codec.MySQLEncoder;
+import com.youu.mysql.protocol.handler.MySQLServerHandler;
+import com.youu.mysql.storage.impl.H2StorageProvider;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -19,12 +21,12 @@ import io.netty.handler.ssl.util.SelfSignedCertificate;
 
 /**
  * @Author Timmy
- * @Description
- * @Date 2021/7/15
+ * @Description storage with h2
+ * @Date 2021/6/11
  */
-public class MySQLDirectServer {
-    public static final boolean SSL = System.getProperty("ssl") != null;
-    public static final int PORT = Integer.parseInt(System.getProperty("port", "3307"));
+public class MySQLH2Server {
+    static final boolean SSL = System.getProperty("ssl") != null;
+    static final int PORT = Integer.parseInt(System.getProperty("port", "3306"));
 
     public static void main(String[] args) throws Exception {
         // Configure SSL.
@@ -39,7 +41,9 @@ public class MySQLDirectServer {
         // Configure the server.
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup();
-
+        // use H2StorageProvider for test
+        // use MySQLStorageProvider can fit all MySQL features
+        final MySQLServerHandler serverHandler = new MySQLServerHandler(new H2StorageProvider());
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
@@ -55,7 +59,8 @@ public class MySQLDirectServer {
                         }
                         //p.addLast(new LoggingHandler(LogLevel.INFO));
                         p.addLast(new MySQLDecoder());
-                        p.addLast(new MySQLServerDirectHandler());
+                        p.addLast(new MySQLEncoder());
+                        p.addLast(serverHandler);
                     }
                 });
 
@@ -70,4 +75,5 @@ public class MySQLDirectServer {
             workerGroup.shutdownGracefully();
         }
     }
+
 }

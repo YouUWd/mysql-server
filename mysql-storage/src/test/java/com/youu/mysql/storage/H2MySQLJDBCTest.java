@@ -7,6 +7,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Properties;
 
 import com.mysql.cj.conf.ConnectionUrl;
@@ -132,7 +133,7 @@ public class H2MySQLJDBCTest {
                 + ") ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8");
             stat.execute("insert into t1 values(1,null,null,null,null)");
 
-            ResultSet resultSet = stat.executeQuery("select * from t1");
+            ResultSet resultSet = stat.executeQuery("select * from t1 limit 1");
 
             System.out.println(resultSet);
 
@@ -144,6 +145,11 @@ public class H2MySQLJDBCTest {
                 System.out.println(columnType);
                 System.out.println(data.getColumnTypeName(i));
                 System.out.println("===============");
+            }
+
+            while (resultSet.next()) {
+                log.info("{} {} {} {} {}", resultSet.getString(1), resultSet.getString(2), resultSet.getString(3),
+                    resultSet.getString(4), resultSet.getString(5));
             }
         } catch (SQLException exception) {
             exception.printStackTrace();
@@ -159,6 +165,29 @@ public class H2MySQLJDBCTest {
         for (DataType type : types) {
             log.info("{} {} {}", type.name, type.sqlType, type);
         }
+    }
+
+    @Test
+    public void test5() {
+        org.h2.Driver.load();
+        try (Connection conn = DriverManager.getConnection("jdbc:h2:mem:test;MODE=MYSQL;database_to_upper=false", "sa",
+            "sa")) {
+            Statement stat = conn.createStatement();
+            stat.execute("SET MODE=MySQL");
+            String createDatabase = "create database d1";
+
+            String[] split = createDatabase.split("\\s+");
+            System.out.println(Arrays.toString(split));
+
+            if ((split[0].equals("create") || split[0].equals("drop")) && split[1].equals("database")) {
+                createDatabase = createDatabase.replaceFirst("database", "schema");
+                stat.execute(createDatabase);
+            }
+
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+        }
+
     }
 
     @Test

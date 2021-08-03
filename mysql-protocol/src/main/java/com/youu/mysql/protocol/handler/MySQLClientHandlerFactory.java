@@ -20,11 +20,9 @@ import org.apache.commons.pool2.impl.DefaultPooledObject;
 public class MySQLClientHandlerFactory extends BaseKeyedPooledObjectFactory<Integer, MySQLClientHandler> {
 
     private final Bootstrap bootstrap;
-    private final CyclicBarrier barrier;
 
-    public MySQLClientHandlerFactory(Bootstrap bootstrap, CyclicBarrier barrier) {
+    public MySQLClientHandlerFactory(Bootstrap bootstrap) {
         this.bootstrap = bootstrap;
-        this.barrier = barrier;
     }
 
     @Override
@@ -40,5 +38,11 @@ public class MySQLClientHandlerFactory extends BaseKeyedPooledObjectFactory<Inte
     @Override
     public PooledObject<MySQLClientHandler> wrap(MySQLClientHandler handler) {
         return new DefaultPooledObject<>(handler);
+    }
+
+    @Override
+    public void destroyObject(Integer key, PooledObject<MySQLClientHandler> p) {
+        log.info("destroyObject {} {}", key, p);
+        p.getObject().stop();
     }
 }

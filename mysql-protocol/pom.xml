@@ -77,7 +77,7 @@
                         <manifest>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>lib/</classpathPrefix>
-                            <mainClass>com.youu.mysql.protocol.MySQLServer</mainClass>
+                            <mainClass>com.youu.mysql.protocol.MySQLH2Server</mainClass>
                         </manifest>
                     </archive>
                     <outputDirectory>${project.parent.basedir}/distribution</outputDirectory>

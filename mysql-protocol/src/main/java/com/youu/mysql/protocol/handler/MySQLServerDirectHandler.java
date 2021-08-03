@@ -39,8 +39,8 @@ import org.apache.commons.pool2.impl.GenericKeyedObjectPool;
 @Sharable
 public class MySQLServerDirectHandler extends SimpleChannelInboundHandler<MySQLPacket> {
 
-    private static final EventLoopGroup GROUP = new NioEventLoopGroup();
-    private CyclicBarrier barrier = new CyclicBarrier(2);
+    private final EventLoopGroup group = new NioEventLoopGroup();
+    private final CyclicBarrier barrier = new CyclicBarrier(2);
 
     private Bootstrap bootstrap;
 
@@ -50,7 +50,7 @@ public class MySQLServerDirectHandler extends SimpleChannelInboundHandler<MySQLP
 
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) {
-        bootstrap = new Bootstrap().group(GROUP)
+        bootstrap = new Bootstrap().group(group)
             .channel(NioSocketChannel.class)
             .handler(new ChannelInitializer<SocketChannel>() {
                          @Override
@@ -62,13 +62,13 @@ public class MySQLServerDirectHandler extends SimpleChannelInboundHandler<MySQLP
                          }
                      }
             );
-        handlerPool = new GenericKeyedObjectPool(new MySQLClientHandlerFactory(bootstrap, barrier));
+        handlerPool = new GenericKeyedObjectPool(new MySQLClientHandlerFactory(bootstrap));
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws InterruptedException, BrokenBarrierException {
         HostPort schemaStore = StorageConfig.getConfig().getSchema();
-        log.info("{} {} channelActive {}", schemaStore, GROUP, bootstrap);
+        log.info("{} {} channelActive {}", schemaStore, group, bootstrap);
         // Make a new connection.
         ChannelFuture f = bootstrap.connect(schemaStore.getHost(), schemaStore.getPort()).sync();
         schemaHandler = (MySQLClientHandler)f.channel().pipeline().last();
@@ -77,7 +77,7 @@ public class MySQLServerDirectHandler extends SimpleChannelInboundHandler<MySQLP
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, MySQLPacket packet) throws Exception {
-        log.info("{} channelRead {}", GROUP, packet);
+        log.info("{} channelRead {}", group, packet);
         ctx.channel().attr(ChannelAttributeKey.STORE_INDEX).set(null);
         if (packet instanceof LoginRequest) {
             schemaHandler.execute(packet);
@@ -106,7 +106,7 @@ public class MySQLServerDirectHandler extends SimpleChannelInboundHandler<MySQLP
                         } catch (Exception e) {
                             log.error("exec in store fail...", e);
                             ErrorPacket error = new ErrorPacket();
-                            error.generate(e.getMessage());
+                            error.generate("Exec in store(" + storeIndex + ") fail: " + e.getMessage());
                             ByteBuf buffer = Unpooled.buffer(1024);
                             error.write(buffer);
                             ctx.writeAndFlush(buffer);
@@ -129,8 +129,10 @@ public class MySQLServerDirectHandler extends SimpleChannelInboundHandler<MySQLP
     }
 
     @Override
-    public void channelInactive(ChannelHandlerContext ctx) {
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         log.info("channelInactive");
+        handlerPool.clear();
+        group.shutdownGracefully();
         ctx.close();
     }
 }
