@@ -1,7 +1,6 @@
 package com.youu.mysql.protocol.util;
 
 import java.nio.charset.Charset;
-import java.util.EnumSet;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.CodecException;
@@ -12,10 +11,10 @@ import io.netty.handler.codec.CodecException;
  * @Date 2021/6/18
  */
 public class MySQLBufUtil {
-    private static final int NULL_VALUE = 0xfb;
-    private static final int SHORT_VALUE = 0xfc;
-    private static final int MEDIUM_VALUE = 0xfd;
-    private static final int LONG_VALUE = 0xfe;
+    public static final int NULL_VALUE = 0xfb;
+    public static final int SHORT_VALUE = 0xfc;
+    public static final int MEDIUM_VALUE = 0xfd;
+    public static final int LONG_VALUE = 0xfe;
 
     public static int readUB2(ByteBuf buf) {
         return buf.readShortLE();
@@ -143,21 +142,6 @@ public class MySQLBufUtil {
             writeLenEncInt(buf, strLen);
             buf.writeBytes(data);
         }
-    }
-
-    public static <E extends Enum<E>> EnumSet<E> readIntEnumSet(ByteBuf buf, Class<E> enumClass) {
-        return toEnumSet(enumClass, buf.readUnsignedIntLE());
-    }
-
-    public static <E extends Enum<E>> EnumSet<E> toEnumSet(Class<E> enumClass, long vector) {
-        EnumSet<E> set = EnumSet.noneOf(enumClass);
-        for (E e : enumClass.getEnumConstants()) {
-            final long mask = 1 << e.ordinal();
-            if ((mask & vector) != 0) {
-                set.add(e);
-            }
-        }
-        return set;
     }
 
     public static void writeNullTerminatedString(ByteBuf buf, String data) {
