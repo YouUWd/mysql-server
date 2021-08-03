@@ -6,12 +6,15 @@ import com.google.common.primitives.Bytes;
 import com.mysql.cj.CharsetMapping;
 import com.mysql.cj.protocol.Security;
 import com.mysql.cj.util.StringUtils;
+import com.youu.mysql.protocol.pkg.req.ComFieldList;
 import com.youu.mysql.protocol.pkg.req.ComQuery;
 import com.youu.mysql.protocol.pkg.req.ComQuit;
 import com.youu.mysql.protocol.pkg.req.LoginRequest;
+import com.youu.mysql.protocol.pkg.res.EofPacket;
 import com.youu.mysql.protocol.pkg.res.HandshakePacket;
 import com.youu.mysql.protocol.pkg.res.OkPacket;
 import com.youu.mysql.protocol.pkg.res.ResultSetPacket;
+import com.youu.mysql.protocol.pkg.res.resultset.ColumnDefinitionPacket;
 import com.youu.mysql.storage.StorageConfig;
 import com.youu.mysql.storage.impl.H2StorageProvider;
 import io.netty.buffer.ByteBuf;
@@ -27,6 +30,7 @@ import org.junit.runners.MethodSorters;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class MySQLServerHandlerTest {
+    private static boolean quit = false;
     private static final EmbeddedChannel channel = new EmbeddedChannel(new MySQLServerHandler(new H2StorageProvider()));
 
     @BeforeClass
@@ -67,6 +71,9 @@ public class MySQLServerHandlerTest {
 
     @AfterClass
     public static void destroy() {
+        if (!quit) {
+            channel.writeInbound(new ComQuit());
+        }
         Assert.assertEquals(false, channel.isActive());
     }
 
@@ -91,6 +98,11 @@ public class MySQLServerHandlerTest {
         channel.writeInbound(new ComQuery("select @@version_comment"));
         response = channel.readOutbound();
         Assert.assertNotNull(response);
+
+        channel.writeInbound(new ComFieldList());
+
+        Assert.assertEquals(ColumnDefinitionPacket.class, channel.readOutbound().getClass());
+        Assert.assertEquals(EofPacket.class, channel.readOutbound().getClass());
     }
 
     @Test
@@ -100,7 +112,11 @@ public class MySQLServerHandlerTest {
 
     @Test
     public void test4_channelInactive() {
-        channel.writeInbound(new ComQuit());
+        if (!quit) {
+            channel.writeInbound(new ComQuit());
+            Assert.assertNull(channel.readOutbound());
+        }
+        quit = true;
     }
 
 }

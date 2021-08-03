@@ -33,22 +33,25 @@ public class MySQLServerDirectHandlerTest extends MySQLContainerBaseTest {
 
     @BeforeClass
     public static void init() throws DigestException {
-        String jdbcUrl = MYSQL.getJdbcUrl();
-        URI uri = URI.create(jdbcUrl.substring(5));
-        StorageConfig.getConfig().setSchema(new HostPort(uri.getHost(), uri.getPort()));
+        if (!localTest) {
+            String jdbcUrl = MYSQL.getJdbcUrl();
+            URI uri = URI.create(jdbcUrl.substring(5));
+            StorageConfig.getConfig().setSchema(new HostPort(uri.getHost(), uri.getPort()));
 
-        MySQLContainer store1 = new MySQLContainer<>(MYSQL_80_IMAGE)
-            .withDatabaseName("test")
-            .withUsername(USER_NAME)
-            .withPassword(PASS_WORD);
-        store1.start();
+            MySQLContainer store1 = new MySQLContainer<>(MYSQL_80_IMAGE)
+                .withDatabaseName("test")
+                .withUsername(USER_NAME)
+                .withPassword(PASS_WORD);
+            store1.start();
 
-        jdbcUrl = store1.getJdbcUrl();
-        uri = URI.create(jdbcUrl.substring(5));
-        StorageConfig.getConfig().getStorages().clear();
-        StorageConfig.getConfig().getStorages().add(new HostPort(uri.getHost(), uri.getPort()));
-        StorageConfig.getConfig().getStorages().add(new HostPort("127.0.0.1", 10010));
+            jdbcUrl = store1.getJdbcUrl();
+            uri = URI.create(jdbcUrl.substring(5));
+            StorageConfig.getConfig().getStorages().clear();
+            StorageConfig.getConfig().getStorages().add(new HostPort(uri.getHost(), uri.getPort()));
+            //add a inaccessible store for test2_channelRead2
+            StorageConfig.getConfig().getStorages().add(new HostPort("127.0.0.1", 10010));
 
+        }
         channel = new EmbeddedChannel(new MySQLServerDirectHandler());
         ByteBuf handshakeData = channel.readOutbound();
         HandshakePacket handshakePacket = new HandshakePacket();

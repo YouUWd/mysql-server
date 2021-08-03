@@ -9,6 +9,7 @@ import org.testcontainers.utility.DockerImageName;
  * @Date 2021/7/26
  */
 public class MySQLContainerBaseTest {
+    protected static boolean localTest = false;
     protected static final DockerImageName MYSQL_80_IMAGE = DockerImageName.parse("mysql:8.0.25");
 
     protected static final String USER_NAME = "root";
@@ -20,7 +21,9 @@ public class MySQLContainerBaseTest {
         .withPassword(PASS_WORD);
 
     static {
-        MYSQL.start();
+        if (!localTest) {
+            MYSQL.start();
+        }
     }
 
 }
