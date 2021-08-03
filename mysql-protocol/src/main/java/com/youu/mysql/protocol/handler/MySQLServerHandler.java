@@ -5,7 +5,6 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.mysql.cj.result.Field;
 import com.youu.mysql.common.constant.MySQLColumnType;
 import com.youu.mysql.common.util.ColumnTypeConverter;
 import com.youu.mysql.common.util.ConnectionId;
@@ -23,8 +22,6 @@ import com.youu.mysql.protocol.pkg.res.OkPacket;
 import com.youu.mysql.protocol.pkg.res.ResultSetPacket;
 import com.youu.mysql.protocol.pkg.res.resultset.ColumnDefinitionPacket;
 import com.youu.mysql.storage.StorageProvider;
-import com.youu.mysql.storage.impl.H2StorageProvider;
-import com.youu.mysql.storage.impl.MySQLStorageProvider;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -111,14 +108,8 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
                         ResultSetMetaData metaData = resultSet.getMetaData();
                         int columnCount = metaData.getColumnCount();
                         for (int i = 1; i <= columnCount; i++) {
-                            MySQLColumnType type = MySQLColumnType.MYSQL_TYPE_VAR_STRING;
-                            if (metaData instanceof com.mysql.cj.jdbc.result.ResultSetMetaData) {
-                                Field field = ((com.mysql.cj.jdbc.result.ResultSetMetaData)metaData).getFields()[i - 1];
-                                type = MySQLColumnType.lookup(field.getMysqlTypeId());
-                            } else if (storageProvider instanceof H2StorageProvider) {
-                                type = ColumnTypeConverter.h22MySQL(metaData.getColumnType(i),
-                                    metaData.getColumnTypeName(i));
-                            }
+                            MySQLColumnType type = ColumnTypeConverter.h22MySQL(metaData.getColumnType(i),
+                                metaData.getColumnTypeName(i));
                             //ColumnDefinitionPacket  charset 应当是client的连接的charset，
                             // 也即show variables like 'character_set_results'; 可从LoginRequest获取
                             resultSetPacket.addColumnDefinition(metaData.getSchemaName(i), metaData.getTableName(i),
@@ -148,56 +139,25 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
             } else if (msg instanceof ComProcessKill) {
                 channelInactive(ctx);
             } else if (msg instanceof ComFieldList) {
-                if (storageProvider instanceof MySQLStorageProvider) {
-                    ResultSet resultSet = storageProvider.executeQuery(
-                        "SELECT * FROM " + ((ComFieldList)msg).getTable() + " LIMIT 0");
-                    byte seq = 1;
-                    ResultSetMetaData metaData = resultSet.getMetaData();
-                    int columnCount = metaData.getColumnCount();
-                    for (int i = 1; i <= columnCount; i++) {
-                        Field field = ((com.mysql.cj.jdbc.result.ResultSetMetaData)metaData).getFields()[i - 1];
-                        ColumnDefinitionPacket definitionPacket = ColumnDefinitionPacket.builder()
-                            .schema(attr.getSchema())
-                            .table(((ComFieldList)msg).getTable())
-                            .orgTable(((ComFieldList)msg).getTable())
-                            .name(metaData.getColumnName(i))
-                            .orgName(metaData.getColumnName(i))
-                            .character(field.getCollationIndex())
-                            .columnLength(metaData.getColumnDisplaySize(i))
-                            .type(field.getMysqlTypeId())
-                            .flags(new byte[] {0, 0})
-                            .decimals(0x1f)
-                            .build();
-                        definitionPacket.setSequenceId(seq++);
-                        ctx.write(definitionPacket);
-                    }
+                ColumnDefinitionPacket definitionPacket = ColumnDefinitionPacket.builder()
+                    .schema("schema")
+                    .table("tableName")
+                    .orgTable("orgTableName")
+                    .name("columnName")
+                    .orgName("orgColumnName")
+                    .character(33)
+                    .columnLength(1024)
+                    .type(MySQLColumnType.MYSQL_TYPE_VAR_STRING.getValue())
+                    .flags(new byte[] {0, 0})
+                    .decimals(0x1f)
+                    .build();
+                definitionPacket.setSequenceId((byte)1);
+                ctx.write(definitionPacket);
 
-                    EofPacket eofDef = new EofPacket();
-                    eofDef.setSequenceId(seq);
+                EofPacket eofDef = new EofPacket();
+                eofDef.setSequenceId((byte)2);
 
-                    ctx.writeAndFlush(eofDef);
-
-                } else {
-                    ColumnDefinitionPacket definitionPacket = ColumnDefinitionPacket.builder()
-                        .schema("schema")
-                        .table("tableName")
-                        .orgTable("orgTableName")
-                        .name("columnName")
-                        .orgName("orgColumnName")
-                        .character(33)
-                        .columnLength(1024)
-                        .type(MySQLColumnType.MYSQL_TYPE_VAR_STRING.getValue())
-                        .flags(new byte[] {0, 0})
-                        .decimals(0x1f)
-                        .build();
-                    definitionPacket.setSequenceId((byte)1);
-                    ctx.write(definitionPacket);
-
-                    EofPacket eofDef = new EofPacket();
-                    eofDef.setSequenceId((byte)2);
-
-                    ctx.writeAndFlush(eofDef);
-                }
+                ctx.writeAndFlush(eofDef);
             }
         }
     }

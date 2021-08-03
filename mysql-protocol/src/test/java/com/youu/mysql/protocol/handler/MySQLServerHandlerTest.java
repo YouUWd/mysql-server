@@ -7,6 +7,7 @@ import com.mysql.cj.CharsetMapping;
 import com.mysql.cj.protocol.Security;
 import com.mysql.cj.util.StringUtils;
 import com.youu.mysql.protocol.pkg.req.ComFieldList;
+import com.youu.mysql.protocol.pkg.req.ComInitDB;
 import com.youu.mysql.protocol.pkg.req.ComQuery;
 import com.youu.mysql.protocol.pkg.req.ComQuit;
 import com.youu.mysql.protocol.pkg.req.LoginRequest;
@@ -98,6 +99,11 @@ public class MySQLServerHandlerTest {
         channel.writeInbound(new ComQuery("select @@version_comment"));
         response = channel.readOutbound();
         Assert.assertNotNull(response);
+
+        ComInitDB initDB = new ComInitDB();
+        initDB.setSchema("test");
+        channel.writeInbound(initDB);
+        Assert.assertSame(OkPacket.class, channel.readOutbound().getClass());
 
         channel.writeInbound(new ComFieldList());
 
