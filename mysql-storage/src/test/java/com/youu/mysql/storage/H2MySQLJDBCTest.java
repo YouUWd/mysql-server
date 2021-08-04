@@ -110,6 +110,7 @@ public class H2MySQLJDBCTest {
             System.out.println("=============");
             while (rs.next()) {
                 System.out.println((rs.getString(1)));
+                System.out.println((rs.getString(2)));
             }
         } catch (SQLException exception) {
             exception.printStackTrace();

@@ -1,7 +1,7 @@
 # MySQL Sever Framework for Java
 --------
 [![Java CI with Maven](https://github.com/YouUWd/mysql-server/actions/workflows/maven.yml/badge.svg)](https://github.com/YouUWd/mysql-server/actions/workflows/maven.yml)
-[![Coverage Status](https://coveralls.io/repos/github/YouUWd/mysql-server/badge.svg?branch=master&service=github&v=101)](https://coveralls.io/github/YouUWd/mysql-server?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/YouUWd/mysql-server/badge.svg?branch=master&service=github&v=102)](https://coveralls.io/github/YouUWd/mysql-server?branch=master)
 [![License](http://img.shields.io/:license-apache-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
 
 **MySQL通信协议，从0到1，创建一个 Java版 MySQL Sever**

@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.youu.mysql.common.constant.MySQLColumnType;
 import com.youu.mysql.common.util.ColumnTypeConverter;
 import com.youu.mysql.common.util.ConnectionId;
+import com.youu.mysql.common.util.H2MySQLConverter;
 import com.youu.mysql.protocol.common.ConnectionAttr;
 import com.youu.mysql.protocol.pkg.req.ComFieldList;
 import com.youu.mysql.protocol.pkg.req.ComInitDB;
@@ -37,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Sharable
 public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
+    private static final String SERVER_VERSION = "Source distribution(YouU Ltd.)";
     private static final AtomicInteger CONN_ID = new AtomicInteger(1);
     public static final AttributeKey<ConnectionAttr> CONN_ATTR = AttributeKey.valueOf("conn_attr");
 
@@ -51,8 +53,9 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
         log.info("New ConnectionId:{}, From {}", ConnectionId.get(), ctx.channel().remoteAddress());
         //https://dev.mysql.com/doc/internals/en/connection-phase-packets.html
         short charset = 255;
+
         HandshakePacket handshakePacket = HandshakePacket.builder()
-            .serverVersion("8.0.22-HTAP")
+            .serverVersion(SERVER_VERSION)
             .connectionId(ConnectionId.get())
             .authPluginDataPart1(new byte[] {1, 2, 3, 4, 5, 6, 7, 8})
             .capabilityFlags1(0xffff)
@@ -96,7 +99,7 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
                     versionPacket.addColumnDefinition("", "", "", "@@version_comment", "", 33, 57,
                         MySQLColumnType.MYSQL_TYPE_VAR_STRING);
                     versionPacket.addEofDef();
-                    versionPacket.addResultSetRow("Source distribution(YouU Ltd.)");
+                    versionPacket.addResultSetRow(SERVER_VERSION);
                     versionPacket.addEofRow();
                     ctx.writeAndFlush(versionPacket);
                 } else {
@@ -127,7 +130,8 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
                         resultSetPacket.addEofRow();
                         ctx.writeAndFlush(resultSetPacket);
                     } else {
-                        storageProvider.execute(sql);
+                        //DDL
+                        storageProvider.execute(H2MySQLConverter.convertMySQL(sql));
                         OkPacket ok = OkPacket.builder().build();
                         ok.setSequenceId((byte)(((ComQuery)msg).getSequenceId() + 1));
                         ctx.writeAndFlush(ok);

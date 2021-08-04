@@ -12,4 +12,13 @@
     <artifactId>mysql-common</artifactId>
     <packaging>jar</packaging>
 
+    <dependencies>
+        <!-- presto-parser不完整，需要补充，后期可替换掉 -->
+        <dependency>
+            <groupId>com.facebook.presto</groupId>
+            <artifactId>presto-parser</artifactId>
+            <version>0.258</version>
+        </dependency>
+    </dependencies>
+
 </project>
