@@ -16,5 +16,10 @@ public class H2MySQLConverterTest {
 
         Assert.assertEquals("CREATE /*+ NOCACHE */SCHEMA d1",
             H2MySQLConverter.convertMySQL("CREATE /*+ NOCACHE */DATABASE d1"));
+
+        Assert.assertEquals("select 1",
+            H2MySQLConverter.convertMySQL("select 1"));
+        Assert.assertEquals("/*+ NOCACHE */select 1",
+            H2MySQLConverter.convertMySQL("/*+ NOCACHE */select 1"));
     }
 }

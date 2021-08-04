@@ -7,7 +7,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.youu.mysql.common.constant.MySQLColumnType;
 import com.youu.mysql.common.util.ColumnTypeConverter;
-import com.youu.mysql.common.util.ConnectionId;
 import com.youu.mysql.common.util.H2MySQLConverter;
 import com.youu.mysql.protocol.common.ConnectionAttr;
 import com.youu.mysql.protocol.pkg.req.ComFieldList;
@@ -38,8 +37,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Sharable
 public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
+    private static final AtomicInteger ID = new AtomicInteger(1);
     private static final String SERVER_VERSION = "Source distribution(YouU Ltd.)";
-    private static final AtomicInteger CONN_ID = new AtomicInteger(1);
     public static final AttributeKey<ConnectionAttr> CONN_ATTR = AttributeKey.valueOf("conn_attr");
 
     private StorageProvider storageProvider;
@@ -50,13 +49,13 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
-        log.info("New ConnectionId:{}, From {}", ConnectionId.get(), ctx.channel().remoteAddress());
+        int id = ID.getAndIncrement();
+        log.info("New ConnectionId:{}, From {}", id, ctx.channel().remoteAddress());
         //https://dev.mysql.com/doc/internals/en/connection-phase-packets.html
         short charset = 255;
-
         HandshakePacket handshakePacket = HandshakePacket.builder()
             .serverVersion(SERVER_VERSION)
-            .connectionId(ConnectionId.get())
+            .connectionId(id)
             .authPluginDataPart1(new byte[] {1, 2, 3, 4, 5, 6, 7, 8})
             .capabilityFlags1(0xffff)
             .characterSet(charset)
@@ -67,24 +66,23 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
             .authPluginName("mysql_native_password")
             .build();
         ctx.writeAndFlush(handshakePacket);
+        ConnectionAttr attr = ConnectionAttr.builder().connectionId(id).build();
+        ctx.channel().attr(CONN_ATTR).set(attr);
     }
 
     @SneakyThrows
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        log.info("Accept ConnectionId: {}, {}", ConnectionId.get(), msg);
+        ConnectionAttr attr = ctx.channel().attr(CONN_ATTR).get();
+        log.info("Accept ConnectionId: {}, {}", attr.getConnectionId(), msg);
         if (msg instanceof LoginRequest) {
-            ConnectionAttr attr = ConnectionAttr.builder().connectionId(Math.abs(CONN_ID.getAndIncrement()))
-                .clientCharset(
-                    ((LoginRequest)msg).getCharacterSet()).build();
-            ctx.channel().attr(CONN_ATTR).set(attr);
+            attr.setClientCharset(((LoginRequest)msg).getCharacterSet());
             //Response OK for login
             storageProvider.init(((LoginRequest)msg).getDatabase());
             OkPacket ok = OkPacket.builder().build();
             ok.setSequenceId((byte)(((LoginRequest)msg).getSequenceId() + 1));
             ctx.writeAndFlush(ok);
         } else {
-            ConnectionAttr attr = ctx.channel().attr(CONN_ATTR).get();
             if (msg instanceof ComInitDB) {
                 attr.setSchema(((ComInitDB)msg).getSchema());
                 storageProvider.init(((ComInitDB)msg).getSchema());
@@ -139,9 +137,9 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
 
                 }
             } else if (msg instanceof ComQuit) {
-                channelInactive(ctx);
+                ctx.close();
             } else if (msg instanceof ComProcessKill) {
-                channelInactive(ctx);
+                ctx.close();
             } else if (msg instanceof ComFieldList) {
                 ColumnDefinitionPacket definitionPacket = ColumnDefinitionPacket.builder()
                     .schema("schema")
@@ -168,7 +166,8 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        log.error("ExceptionCaught ConnectionId:{}", ConnectionId.get(), cause);
+        ConnectionAttr attr = ctx.channel().attr(CONN_ATTR).get();
+        log.error("ExceptionCaught ConnectionId:{}", attr.getConnectionId(), cause);
         byte seq = 1;
         ErrorPacket errorPacket = new ErrorPacket();
         errorPacket.setSequenceId(seq);
@@ -190,13 +189,13 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
+        ConnectionAttr attr = ctx.channel().attr(CONN_ATTR).get();
+        log.info("Close ConnectionId:{}", attr.getConnectionId());
         try {
             ctx.channel().attr(CONN_ATTR).set(null);
             storageProvider.release();
         } catch (SQLException exception) {
             log.error("channelInactive ", exception);
         }
-        ctx.close();
-        log.info("Close ConnectionId:{}", ConnectionId.get());
     }
 }
