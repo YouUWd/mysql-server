@@ -3,7 +3,6 @@ package com.youu.mysql.protocol.pkg.res;
 import java.util.List;
 
 import com.google.common.collect.Lists;
-import com.youu.mysql.common.constant.MySQLColumnType;
 import com.youu.mysql.protocol.pkg.MySQLPacket;
 import com.youu.mysql.protocol.pkg.res.resultset.ColumnCountPacket;
 import com.youu.mysql.protocol.pkg.res.resultset.ColumnDefinitionPacket;
@@ -27,12 +26,12 @@ public class ResultSetPacket extends MySQLPacket {
     private EofPacket eofRow = new EofPacket();
 
     public void addColumnDefinition(String schema, String tableName, String columnName,
-                                    int character, int columnLength, MySQLColumnType columnType) {
-        addColumnDefinition(schema, tableName, tableName, columnName, columnName, character, columnLength, columnType);
+                                    int character, int columnLength, int fieldType) {
+        addColumnDefinition(schema, tableName, tableName, columnName, columnName, character, columnLength, fieldType);
     }
 
     public void addColumnDefinition(String schema, String tableName, String orgTableName, String columnName,
-                                    String orgColumnName, int character, int columnLength, MySQLColumnType columnType) {
+                                    String orgColumnName, int character, int columnLength, int fieldType) {
         columnCountPacket.addColumn();
         ColumnDefinitionPacket definitionPacket = ColumnDefinitionPacket.builder()
             .schema(schema)
@@ -42,7 +41,7 @@ public class ResultSetPacket extends MySQLPacket {
             .orgName(orgColumnName)
             .character(character)
             .columnLength(columnLength)
-            .type(columnType.getValue())
+            .type(fieldType)
             .flags(new byte[] {0, 0})
             .decimals(0x1f)
             .build();

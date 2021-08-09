@@ -1,6 +1,6 @@
 package com.youu.mysql.protocol.pkg.res;
 
-import com.youu.mysql.common.constant.MySQLColumnType;
+import com.mysql.cj.MysqlType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
@@ -14,7 +14,7 @@ public class ResultSetPacketTest extends TestCase {
     @Test
     public void test() {
         ByteBuf buf = Unpooled.buffer(128);
-        packet.addColumnDefinition("", "", "", "@@version_comment", "", 33, 57, MySQLColumnType.MYSQL_TYPE_VAR_STRING);
+        packet.addColumnDefinition("", "", "", "@@version_comment", "", 33, 57, MysqlType.FIELD_TYPE_VAR_STRING);
         packet.addEofDef();
         packet.addResultSetRow("Source distribution");
         packet.addEofRow();
@@ -29,9 +29,9 @@ public class ResultSetPacketTest extends TestCase {
         ByteBuf buf = Unpooled.buffer(1024);
         packet.setSequenceId((byte)0);
         packet.addColumnDefinition("d1", "t1", "t1", "id", "id", 63, 11,
-            MySQLColumnType.MYSQL_TYPE_LONG);
+            MysqlType.FIELD_TYPE_LONGLONG);
         packet.addColumnDefinition("d1", "t1", "t1", "name", "name", 33, 48,
-            MySQLColumnType.MYSQL_TYPE_VAR_STRING);
+            MysqlType.FIELD_TYPE_VAR_STRING);
         packet.addEofDef();
         packet.addResultSetRow("1", "a");
         packet.addEofRow();

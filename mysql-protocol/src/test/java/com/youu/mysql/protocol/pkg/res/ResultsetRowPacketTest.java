@@ -1,7 +1,7 @@
 package com.youu.mysql.protocol.pkg.res;
 
 import com.google.common.collect.Lists;
-import com.youu.mysql.common.constant.MySQLColumnType;
+import com.mysql.cj.MysqlType;
 import com.youu.mysql.protocol.pkg.res.resultset.ColumnCountPacket;
 import com.youu.mysql.protocol.pkg.res.resultset.ColumnDefinitionPacket;
 import com.youu.mysql.protocol.pkg.res.resultset.ResultSetRowPacket;
@@ -64,7 +64,7 @@ public class ResultsetRowPacketTest extends TestCase {
             .orgName("id")
             .character(63)
             .columnLength(11)
-            .type(MySQLColumnType.MYSQL_TYPE_LONG.getValue())
+            .type(MysqlType.FIELD_TYPE_VAR_STRING)
             .flags(new byte[] {0, 0})
             .decimals(0)
             .build();
@@ -80,7 +80,7 @@ public class ResultsetRowPacketTest extends TestCase {
             .orgName("name")
             .character(33)
             .columnLength(48)
-            .type(MySQLColumnType.MYSQL_TYPE_VAR_STRING.getValue())
+            .type(MysqlType.FIELD_TYPE_VAR_STRING)
             .flags(new byte[] {0, 0})
             .decimals(0)
             .build();

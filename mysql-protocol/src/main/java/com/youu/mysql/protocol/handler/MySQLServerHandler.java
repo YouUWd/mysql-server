@@ -5,8 +5,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.youu.mysql.common.constant.MySQLColumnType;
-import com.youu.mysql.common.util.ColumnTypeConverter;
+import com.mysql.cj.MysqlType;
 import com.youu.mysql.common.util.H2MySQLConverter;
 import com.youu.mysql.protocol.common.ConnectionAttr;
 import com.youu.mysql.protocol.pkg.req.ComFieldList;
@@ -22,6 +21,7 @@ import com.youu.mysql.protocol.pkg.res.OkPacket;
 import com.youu.mysql.protocol.pkg.res.ResultSetPacket;
 import com.youu.mysql.protocol.pkg.res.resultset.ColumnDefinitionPacket;
 import com.youu.mysql.storage.StorageProvider;
+import com.youu.mysql.storage.util.ColumnTypeConverter;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -95,7 +95,7 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
                 if (sql.contains("@@version_comment")) {
                     ResultSetPacket versionPacket = new ResultSetPacket();
                     versionPacket.addColumnDefinition("", "", "", "@@version_comment", "", 33, 57,
-                        MySQLColumnType.MYSQL_TYPE_VAR_STRING);
+                        MysqlType.FIELD_TYPE_VAR_STRING);
                     versionPacket.addEofDef();
                     versionPacket.addResultSetRow(SERVER_VERSION);
                     versionPacket.addEofRow();
@@ -109,13 +109,13 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
                         ResultSetMetaData metaData = resultSet.getMetaData();
                         int columnCount = metaData.getColumnCount();
                         for (int i = 1; i <= columnCount; i++) {
-                            MySQLColumnType type = ColumnTypeConverter.h22MySQL(metaData.getColumnType(i),
+                            int fieldType = ColumnTypeConverter.h22MySQL(metaData.getColumnType(i),
                                 metaData.getColumnTypeName(i));
                             //ColumnDefinitionPacket  charset 应当是client的连接的charset，
                             // 也即show variables like 'character_set_results'; 可从LoginRequest获取
                             resultSetPacket.addColumnDefinition(metaData.getSchemaName(i), metaData.getTableName(i),
                                 metaData.getTableName(i), metaData.getColumnLabel(i), metaData.getColumnName(i),
-                                attr.getClientCharset(), metaData.getColumnDisplaySize(i), type);
+                                attr.getClientCharset(), metaData.getColumnDisplaySize(i), fieldType);
                         }
                         resultSetPacket.addEofDef();
                         while (resultSet.next()) {
@@ -149,7 +149,7 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
                     .orgName("orgColumnName")
                     .character(33)
                     .columnLength(1024)
-                    .type(MySQLColumnType.MYSQL_TYPE_VAR_STRING.getValue())
+                    .type(MysqlType.FIELD_TYPE_VAR_STRING)
                     .flags(new byte[] {0, 0})
                     .decimals(0x1f)
                     .build();
