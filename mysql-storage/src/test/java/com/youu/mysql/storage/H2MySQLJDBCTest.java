@@ -34,13 +34,12 @@ public class H2MySQLJDBCTest {
         server.start();
         org.h2.Driver.load();
         try (Connection conn = DriverManager.getConnection(
-            "jdbc:h2:tcp://localhost:9101/~/h2/tcp/d1;database_to_upper=false", "sa", "sa")) {
+                "jdbc:h2:tcp://localhost:9101/~/h2/tcp/d1;database_to_upper=false", "sa", "sa")) {
             Statement stat = conn.createStatement();
             ResultSet rs = stat.executeQuery("show tables");
             while (rs.next()) {
                 System.out.println((rs.getString(1)));
             }
-            System.out.println("=============");
             stat.execute("drop table if exists t1");
             stat.execute("drop table if exists T1");
             stat.execute("create table if not exists t1(id int,name varchar(16))");
@@ -49,7 +48,6 @@ public class H2MySQLJDBCTest {
                 System.out.println((rs.getString(1)));
             }
             rs = stat.executeQuery("show tables");
-            System.out.println("=============");
             while (rs.next()) {
                 System.out.println((rs.getString(1)));
             }
@@ -68,8 +66,7 @@ public class H2MySQLJDBCTest {
             while (rs.next()) {
                 System.out.println((rs.getString(1)));
             }
-            System.out.println("=============");
-            //h2  create database is create schema
+            //h2  create database is created schema
             stat.execute("create schema d2");
             stat.execute("drop table if exists t1");
             stat.execute("drop table if exists T1");
@@ -79,7 +76,6 @@ public class H2MySQLJDBCTest {
                 System.out.println((rs.getString(1)));
             }
             rs = stat.executeQuery("show tables");
-            System.out.println("=============");
             while (rs.next()) {
                 System.out.println((rs.getString(1)));
             }
@@ -93,7 +89,7 @@ public class H2MySQLJDBCTest {
     public void test2() {
         org.h2.Driver.load();
         try (Connection conn = DriverManager.getConnection(
-            "jdbc:h2:mem:d1;MODE=MYSQL;database_to_upper=false;INIT=CREATE SCHEMA IF NOT EXISTS d1", "sa", "sa")) {
+                "jdbc:h2:mem:d1;MODE=MYSQL;database_to_upper=false;INIT=CREATE SCHEMA IF NOT EXISTS d1", "sa", "sa")) {
             Statement stat = conn.createStatement();
             ResultSet rs = stat.executeQuery("show tables");
             while (rs.next()) {
@@ -123,16 +119,16 @@ public class H2MySQLJDBCTest {
     public void test3() {
         org.h2.Driver.load();
         try (Connection conn = DriverManager.getConnection("jdbc:h2:mem:d1;MODE=MYSQL;database_to_upper=false", "sa",
-            "sa")) {
+                "sa")) {
             Statement stat = conn.createStatement();
             stat.execute("CREATE TABLE `t1` (\n"
-                + "  `id` bigint unsigned NOT NULL AUTO_INCREMENT,\n"
-                + "  `s0` decimal(8,0) DEFAULT NULL,\n"
-                + "  `s1` double DEFAULT NULL,\n"
-                + "  `s2` text,\n"
-                + "  `s3` blob,\n"
-                + "  PRIMARY KEY (`id`)\n"
-                + ") ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8");
+                    + "  `id` bigint unsigned NOT NULL AUTO_INCREMENT,\n"
+                    + "  `s0` decimal(8,0) DEFAULT NULL,\n"
+                    + "  `s1` double DEFAULT NULL,\n"
+                    + "  `s2` text,\n"
+                    + "  `s3` blob,\n"
+                    + "  PRIMARY KEY (`id`)\n"
+                    + ") ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8");
             stat.execute("insert into t1 values(1,null,null,null,null)");
 
             ResultSet resultSet = stat.executeQuery("select * from t1 limit 1");
@@ -151,7 +147,7 @@ public class H2MySQLJDBCTest {
 
             while (resultSet.next()) {
                 log.info("{} {} {} {} {}", resultSet.getString(1), resultSet.getString(2), resultSet.getString(3),
-                    resultSet.getString(4), resultSet.getString(5));
+                        resultSet.getString(4), resultSet.getString(5));
             }
         } catch (SQLException exception) {
             exception.printStackTrace();
@@ -173,7 +169,7 @@ public class H2MySQLJDBCTest {
     public void test5() {
         org.h2.Driver.load();
         try (Connection conn = DriverManager.getConnection("jdbc:h2:mem:test;MODE=MYSQL;database_to_upper=false", "sa",
-            "sa")) {
+                "sa")) {
             Statement stat = conn.createStatement();
             stat.execute("SET MODE=MySQL");
             String createDatabase = "create database d1";
@@ -197,8 +193,6 @@ public class H2MySQLJDBCTest {
         String s = "jdbc:mysql://localhost:33050/d1?useSSL=true";
         int ds = s.indexOf("/", 13);
         int de = s.indexOf("?", ds);
-        System.out.println(ds);
-        System.out.println(de);
         System.out.println(s.substring(ds, de));
         System.out.println(s.replaceFirst(s.substring(ds, de), "/" + "aaa"));
 
@@ -276,7 +270,7 @@ public class H2MySQLJDBCTest {
     @Test
     public void testMySQL2() throws SQLException {
         String jdbcUrl
-            = "jdbc:mysql://localhost:3306?useSSL=false";
+                = "jdbc:mysql://localhost:3306?useSSL=false";
         Properties info = new Properties();
         info.put("user", "sha2");
         info.put("password", "pass");
@@ -299,37 +293,37 @@ public class H2MySQLJDBCTest {
     public void testColumnTypes() {
         org.h2.Driver.load();
         try (Connection conn = DriverManager.getConnection("jdbc:h2:mem:d1;MODE=MYSQL;database_to_upper=false", "sa",
-            "sa")) {
+                "sa")) {
             Statement stat = conn.createStatement();
             StringBuilder builder = new StringBuilder();
             builder.append("CREATE TABLE `t1` (").append(System.getProperty("line.separator"))
-                .append("_INT INT,").append(System.getProperty("line.separator"))
-                .append("_BOOLEAN BOOLEAN,").append(System.getProperty("line.separator"))
-                .append("_TINYINT TINYINT,").append(System.getProperty("line.separator"))
-                .append("_SMALLINT SMALLINT,").append(System.getProperty("line.separator"))
-                .append("_BIGINT BIGINT,").append(System.getProperty("line.separator"))
-                .append("_IDENTITY IDENTITY,").append(System.getProperty("line.separator"))
-                .append("_DECIMAL DECIMAL,").append(System.getProperty("line.separator"))
-                .append("_DOUBLE DOUBLE,").append(System.getProperty("line.separator"))
-                .append("_REAL REAL,").append(System.getProperty("line.separator"))
-                .append("_TIME TIME,").append(System.getProperty("line.separator"))
-                .append("__TIME TIME WITH TIME ZONE,").append(System.getProperty("line.separator"))
-                .append("_DATE DATE,").append(System.getProperty("line.separator"))
-                .append("_TIMESTAMP TIMESTAMP,").append(System.getProperty("line.separator"))
-                .append("__TIMESTAMP TIMESTAMP WITH TIME ZONE,").append(System.getProperty("line.separator"))
-                .append("_BINARY BINARY,").append(System.getProperty("line.separator"))
-                .append("_OTHER OTHER,").append(System.getProperty("line.separator"))
-                .append("_VARCHAR VARCHAR,").append(System.getProperty("line.separator"))
-                .append("_VARCHAR_IGNORECASE VARCHAR_IGNORECASE,").append(System.getProperty("line.separator"))
-                .append("_CHAR CHAR,").append(System.getProperty("line.separator"))
-                .append("_BLOB BLOB,").append(System.getProperty("line.separator"))
-                .append("_CLOB CLOB,").append(System.getProperty("line.separator"))
-                .append("_UUID UUID,").append(System.getProperty("line.separator"))
-                .append("_ARRAY ARRAY,").append(System.getProperty("line.separator"))
-                .append("_ENUM ENUM(1,2,3),").append(System.getProperty("line.separator"))
-                .append("_GEOMETRY GEOMETRY,").append(System.getProperty("line.separator"))
-                .append("_JSON JSON")
-                .append(")");
+                    .append("_INT INT,").append(System.getProperty("line.separator"))
+                    .append("_BOOLEAN BOOLEAN,").append(System.getProperty("line.separator"))
+                    .append("_TINYINT TINYINT,").append(System.getProperty("line.separator"))
+                    .append("_SMALLINT SMALLINT,").append(System.getProperty("line.separator"))
+                    .append("_BIGINT BIGINT,").append(System.getProperty("line.separator"))
+                    .append("_IDENTITY IDENTITY,").append(System.getProperty("line.separator"))
+                    .append("_DECIMAL DECIMAL,").append(System.getProperty("line.separator"))
+                    .append("_DOUBLE DOUBLE,").append(System.getProperty("line.separator"))
+                    .append("_REAL REAL,").append(System.getProperty("line.separator"))
+                    .append("_TIME TIME,").append(System.getProperty("line.separator"))
+                    .append("__TIME TIME WITH TIME ZONE,").append(System.getProperty("line.separator"))
+                    .append("_DATE DATE,").append(System.getProperty("line.separator"))
+                    .append("_TIMESTAMP TIMESTAMP,").append(System.getProperty("line.separator"))
+                    .append("__TIMESTAMP TIMESTAMP WITH TIME ZONE,").append(System.getProperty("line.separator"))
+                    .append("_BINARY BINARY,").append(System.getProperty("line.separator"))
+                    .append("_OTHER OTHER,").append(System.getProperty("line.separator"))
+                    .append("_VARCHAR VARCHAR,").append(System.getProperty("line.separator"))
+                    .append("_VARCHAR_IGNORECASE VARCHAR_IGNORECASE,").append(System.getProperty("line.separator"))
+                    .append("_CHAR CHAR,").append(System.getProperty("line.separator"))
+                    .append("_BLOB BLOB,").append(System.getProperty("line.separator"))
+                    .append("_CLOB CLOB,").append(System.getProperty("line.separator"))
+                    .append("_UUID UUID,").append(System.getProperty("line.separator"))
+                    .append("_ARRAY ARRAY,").append(System.getProperty("line.separator"))
+                    .append("_ENUM ENUM(1,2,3),").append(System.getProperty("line.separator"))
+                    .append("_GEOMETRY GEOMETRY,").append(System.getProperty("line.separator"))
+                    .append("_JSON JSON")
+                    .append(")");
 
             stat.execute(builder.toString());
 
@@ -340,7 +334,7 @@ public class H2MySQLJDBCTest {
             String format = "%20s\t%-20.20s\t%10s\n";
             for (int i = 1; i <= columnCount; i++) {
                 System.out.format(format, data.getColumnName(i), data.getColumnTypeName(i),
-                    data.getColumnType(i));
+                        data.getColumnType(i));
             }
             while (resultSet.next()) {
                 System.out.println("1 <<<<===========>>>>");
@@ -352,7 +346,7 @@ public class H2MySQLJDBCTest {
             columnCount = data.getColumnCount();
             for (int i = 1; i <= columnCount; i++) {
                 System.out.format(format, data.getColumnName(i), data.getColumnTypeName(i),
-                    data.getColumnType(i));
+                        data.getColumnType(i));
             }
             while (resultSet.next()) {
                 System.out.println("2 <<<<===========>>>>" + resultSet.getString(1));
@@ -370,7 +364,7 @@ public class H2MySQLJDBCTest {
     @Test
     public void testMySQLColumnTypesAndMySQLType() {
         try (Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/d2?useSSL=false", "root",
-            "pass")) {
+                "pass")) {
             Statement stat = conn.createStatement();
 
             ResultSet resultSet = stat.executeQuery("select * from t2 limit 0");
@@ -381,9 +375,9 @@ public class H2MySQLJDBCTest {
             for (int i = 1; i <= columnCount; i++) {
 
                 if (data instanceof com.mysql.cj.jdbc.result.ResultSetMetaData) {
-                    Field field = ((com.mysql.cj.jdbc.result.ResultSetMetaData)data).getFields()[i - 1];
+                    Field field = ((com.mysql.cj.jdbc.result.ResultSetMetaData) data).getFields()[i - 1];
                     System.out.format(format, data.getColumnName(i), data.getColumnTypeName(i),
-                        data.getColumnType(i), field.getMysqlTypeId());
+                            data.getColumnType(i), field.getMysqlTypeId());
                 }
             }
             while (resultSet.next()) {
